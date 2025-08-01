@@ -1,4 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 // ... other imports
 import { 
@@ -25,10 +27,7 @@ import {
 } from 'react-icons/fa';
 
 // Custom hook for state management (replacing localStorage)
-const usePersistedState = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(initialValue);
-  return [storedValue, setStoredValue];
-};
+// Custom hook for state management that uses localStorage
 
 // Reusable Card Component
 const Card = ({ children, className = "", onClick }) => (
@@ -181,7 +180,7 @@ const CalendarView = ({ type, gymCalendar, skinCareCalendar, onMarkDay, currentM
 
 function App() {
   // State management with custom hook
-  const [attendanceData, setAttendanceData] = usePersistedState('attendanceData', {
+  const [attendanceData, setAttendanceData] = useState({
     'EIM(SB)': { attended: 8, total: 12 },
     'DSP(SRC)': { attended: 9, total: 11 },
     'ADC(TM)': { attended: 7, total: 10 },
@@ -189,20 +188,17 @@ function App() {
     'MPMC': { attended: 10, total: 12 },
     'LAB': { attended: 8, total: 10 }
   });
-
-  const [gymData, setGymData] = usePersistedState('gymData', {
+  const [gymData, setGymData] = useState({
     streak: 5,
     calendar: {}
   });
   const [editingSubject, setEditingSubject] = useState(null);
-
-  const [skinCareData, setSkinCareData] = usePersistedState('skinCareData', {
+  const [skinCareData, setSkinCareData] = useState({
     streak: 7,
     calendar: {}
   });
 
-
-  const [groceryList, setGroceryList] = usePersistedState('groceryList', []);
+  const [groceryList, setGroceryList] = useState([]);
   const [newGroceryItem, setNewGroceryItem] = useState('');
 
   // View states
@@ -214,7 +210,58 @@ function App() {
     style: false,
     grocery: false
   });
+  const [isLoading, setIsLoading] = useState(true); // <--- ADD THIS LINE
+  // This useEffect will run ONCE to LOAD data from Firestore
+  useEffect(() => {
+    const loadData = async () => {
+      const docRef = doc(db, "userData", "sagar");
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        console.log("✅ Data loaded from Firebase!");
+        const data = docSnap.data();
+        setAttendanceData(data.attendanceData || {});
+        setGymData(data.gymData || {});
+        setSkinCareData(data.skinCareData || {});
+        setGroceryList(data.groceryList || []);
+      } else {
+        console.log("No online data found. Using initial app data.");
+      }
+      // Finished loading, allow saving to happen now
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, []); // The empty array [] ensures this runs only once
+
+  // This useEffect will run to SAVE data to Firestore whenever it changes
+  useEffect(() => {
+    // DO NOT save data until the initial load is complete
+    if (isLoading) {
+      return; 
+    }
+
+    const saveData = async () => {
+      console.log("🔄 Saving data to Firebase...");
+      try {
+        await setDoc(doc(db, "userData", "sagar"), {
+          attendanceData,
+          gymData,
+          skinCareData,
+          groceryList
+        });
+        console.log("✅ Data successfully saved!");
+      } catch (error) {
+        console.error("❌ Error saving data:", error);
+      }
+    };
+
+    saveData();
+    
+  },[attendanceData, gymData, skinCareData, groceryList, isLoading]);// This runs when the data changes
+  // This useEffect will run once to LOAD data from Firestore when the app starts
   
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
 

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Firebase Connection Test</title>
+</head>
+<body>
+  <h1>Firebase Connection Test</h1>
+  <p>Open the browser console (F12) and click the button below.</p>
+  <button id="testButton">Test Firebase Connection</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAGnGJ2fyC5DEbV9o8DESQXsh8HUcnR-JGY",
+      authDomain: "sagar-dashboard-b7252.firebaseapp.com",
+      projectId: "sagar-dashboard-b7252",
+      storageBucket: "sagar-dashboard-b7252.firebasestorage.app",
+      messagingSenderId: "345963130842",
+      appId: "1:345963130842:web:c30d01bbfc80456f345ae3"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Function to test writing data
+    async function testFirebaseWrite() {
+      console.log("Attempting to write from test.html...");
+      alert("Attempting to write to Firebase...");
+      try {
+        const docRef = doc(db, "connectionTest", "fromHTML");
+        await setDoc(docRef, { timestamp: new Date(), status: "Success!" });
+        console.log("✅ SUCCESS: Wrote data to Firebase!");
+        alert("SUCCESS! The connection to Firebase is working.");
+      } catch (error) {
+        console.error("❌ FAILED to write data:", error);
+        alert("FAILED! The connection is not working. Check the console for the error message.");
+      }
+    };
+
+    document.getElementById("testButton").onclick = testFirebaseWrite;
+  </script>
+</body>
+</html>

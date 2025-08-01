@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Chat from './chat';
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
@@ -179,6 +180,7 @@ const CalendarView = ({ type, gymCalendar, skinCareCalendar, onMarkDay, currentM
 };
 
 function App() {
+
   // State management with custom hook
   const [attendanceData, setAttendanceData] = useState({
     'EIM(SB)': { attended: 8, total: 12 },
@@ -208,7 +210,8 @@ function App() {
     skinCare: false,
     gym: false,
     style: false,
-    grocery: false
+    grocery: false,
+    chat: false 
   });
   const [isLoading, setIsLoading] = useState(true); // <--- ADD THIS LINE
   // This useEffect will run ONCE to LOAD data from Firestore
@@ -504,7 +507,7 @@ function App() {
     const safeSubjects = Object.keys(attendanceData).filter(subject => getAttendancePercentage(subject) >= 75);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black p-6 text-white">
+      <div className="min-h-screen p-6 text-white">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-bold text-gray-200">Attendance Tracker</h1>
@@ -628,7 +631,7 @@ function App() {
 if (views.schedule) {
   return (
     // This is the correct line for the Schedule view (around line 518)
-<div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black p-6 text-white">
+<div className="min-h-screen p-6 text-white">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-200">Class Schedule</h1>
@@ -709,7 +712,7 @@ if (views.schedule) {
 
   if (views.gym) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black p-6 text-white">
+      <div className="min-h-screen p-6 text-white">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-gray-200">Gym Tracker</h1>
@@ -769,7 +772,7 @@ if (views.schedule) {
     const todayRoutine = staticData.skinCareRoutine[getCurrentDay()];
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black p-6 text-white">
+      <div className="min-h-screen p-6 text-white">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-gray-200">Skincare Routine</h1>
@@ -823,7 +826,7 @@ if (views.schedule) {
 
   if (views.style) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black p-6 text-white">
+      <div className="min-h-screen p-6 text-white">
         <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-200">Style Guide</h1>
@@ -883,7 +886,7 @@ if (views.schedule) {
 
   if (views.grocery) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black p-6 text-white">
+      <div className="min-h-screen p-6 text-white">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-gray-200">Grocery List</h1>
@@ -953,6 +956,9 @@ if (views.schedule) {
         </div>
       </div>
     );
+  }
+  if (views.chat) {
+    return <Chat onClose={() => updateView('chat', false)} />;
   }
   // Main Dashboard
   const pendingGroceries = groceryList.filter(item => !item.completed).length;
@@ -1121,9 +1127,9 @@ if (views.schedule) {
 
         {/* AI Assistant */}
         {/* AI Assistant with Quote */}
-<div className="space-y-6">
+        <div className="space-y-6">
   <Card className="p-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
-  <div className="flex items-start gap-3 mb-4">
+    <div className="flex items-start gap-3 mb-4">
       <FaQuoteLeft className="text-2xl opacity-75" />
       <div>
         <p className="text-lg font-medium">"Success is not final, failure is not fatal: it is the courage to continue that counts."</p>
@@ -1132,9 +1138,11 @@ if (views.schedule) {
     </div>
   </Card>
 
-  <Card className="p-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 relative overflow-hidden">
-    {/* This is the new position for the decorative circle */}
-    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-20 rounded-full -ml-12 -mb-12"></div>
+  <Card onClick={() => updateView('chat', true)} className="p-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 relative overflow-hidden">
+    {/* Fixed decorative elements - moved and adjusted */}
+    <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
+    <div className="absolute bottom-0 right-0 w-16 h-16 bg-white opacity-15 rounded-full -mr-8 -mb-8"></div>
+    
     <div className="relative z-10">
       <div className="flex items-center gap-4">
         <FaRobot className="text-3xl" />
@@ -1142,7 +1150,6 @@ if (views.schedule) {
           <h3 className="font-semibold text-lg">Chat with AI Assistant</h3>
           <p className="text-sm opacity-90">Get personalized help with fitness, studies, skincare & style</p>
         </div>
-        {/* Updated button text color to match the golden theme */}
         <button className="ml-auto px-6 py-3 bg-white text-orange-600 rounded-xl hover:bg-gray-100 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-1">
           Start Chat
         </button>

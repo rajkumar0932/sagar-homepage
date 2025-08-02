@@ -185,7 +185,6 @@ const CalendarView = ({ type, gymCalendar, skinCareCalendar, onMarkDay, currentM
 
 function App() {
   const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
 
   // This hook will run once and listen for login/logout changes
   useEffect(() => {
@@ -198,14 +197,21 @@ function App() {
 
   // State management with custom hook
   const [attendanceData, setAttendanceData] = useState({
-   
+    'EIM(SB)': { attended: 8, total: 12 },
+    'DSP(SRC)': { attended: 9, total: 11 },
+    'ADC(TM)': { attended: 7, total: 10 },
+    'IM(ABC)': { attended: 6, total: 9 },
+    'MPMC': { attended: 10, total: 12 },
+    'LAB': { attended: 8, total: 10 }
   });
   const [gymData, setGymData] = useState({
-   
+    streak: 5,
+    calendar: {}
   });
   const [editingSubject, setEditingSubject] = useState(null);
   const [skinCareData, setSkinCareData] = useState({
-   
+    streak: 7,
+    calendar: {}
   });
 
   const [groceryList, setGroceryList] = useState([]);
@@ -225,65 +231,56 @@ function App() {
   // This useEffect will run ONCE to LOAD data from Firestore
  // useEffect to LOAD data for the current user
   // This useEffect will run to LOAD data for the CURRENT user
- // useEffect to LOAD data for the current user
-// useEffect to LOAD data for the CURRENT user
-useEffect(() => {
-  if (!user) {
-    setUserProfile(null);
-    return; 
-  }
-  
-  const loadData = async () => {
-    setIsLoading(true);
-    const docRef = doc(db, "userData", user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      setUserProfile(data); 
-      setAttendanceData(data.attendanceData || {});
-      setGymData(data.gymData || {});
-      setSkinCareData(data.skinCareData || {});
-      setGroceryList(data.groceryList || []);
-    } else {
-      console.log("No online data for this new user. Setting default data.");
-      setUserProfile({ firstName: user.email.split('@')[0] });
-      setAttendanceData({
-        'EIM(SB)': { attended: 8, total: 12 },
-        'DSP(SRC)': { attended: 9, total: 11 },
-        'ADC(TM)': { attended: 7, total: 10 },
-        'IM(ABC)': { attended: 6, total: 9 },
-        'MPMC': { attended: 10, total: 12 },
-        'LAB': { attended: 8, total: 10 }
-      });
-      setGymData({ streak: 0, calendar: {} });
-      setSkinCareData({ streak: 0, calendar: {} });
-      setGroceryList([]);
+  useEffect(() => {
+    // Don't do anything if no user is logged in
+    if (!user) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
-  };
+    
+    const loadData = async () => {
+      setIsLoading(true);
+      // Use the logged-in user's unique ID to find their specific document
+      const docRef = doc(db, "userData", user.uid); 
+      const docSnap = await getDoc(docRef);
 
-  loadData();
-}, [user, setUserProfile]); // Added setUserProfile
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setAttendanceData(data.attendanceData || {});
+        setGymData(data.gymData || {});
+        setSkinCareData(data.skinCareData || {});
+        setGroceryList(data.groceryList || []);
+      } else {
+        console.log("No online data for this user. Starting with default data.");
+      }
+      setIsLoading(false);
+    };
 
-// useEffect to SAVE data for the CURRENT user
-useEffect(() => {
-  if (isLoading || !user) return;
+    loadData();
+  }, [user]); // This hook now runs only when a user logs in or out
 
-  const saveData = async () => {
-    console.log("🔄 Saving data to Firebase for user:", user.uid);
-    await setDoc(doc(db, "userData", user.uid), {
-      ...userProfile, // Added userProfile to save
-      attendanceData,
-      gymData,
-      skinCareData,
-      groceryList
-    });
-  };
+  // This useEffect will run to SAVE data for the CURRENT user
+  useEffect(() => {
+    // Don't save anything until loading is finished and a user is logged in
+    if (isLoading || !user) {
+      return;
+    }
 
-  saveData();
-  
-}, [attendanceData, gymData, skinCareData, groceryList, user, isLoading, userProfile]); // Added userProfile
+    const saveData = async () => {
+      console.log("🔄 Saving data to Firebase for user:", user.uid);
+      // Use the logged-in user's unique ID to save to their specific document
+      await setDoc(doc(db, "userData", user.uid), {
+        attendanceData,
+        gymData,
+        skinCareData,
+        groceryList
+      });
+    };
+
+    saveData();
+    
+  }, [attendanceData, gymData, skinCareData, groceryList, user, isLoading]); // This runs when data changes
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
 

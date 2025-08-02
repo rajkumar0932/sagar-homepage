@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Chat from './chat';
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import AnimatedBackground from './AnimatedBackground';
+import LoginPage from './LoginPage';
 
 // ... other imports
 import { 
@@ -180,6 +184,16 @@ const CalendarView = ({ type, gymCalendar, skinCareCalendar, onMarkDay, currentM
 };
 
 function App() {
+  const [user, setUser] = useState(null);
+
+  // This hook will run once and listen for login/logout changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   // State management with custom hook
   const [attendanceData, setAttendanceData] = useState({
@@ -215,55 +229,42 @@ function App() {
   });
   const [isLoading, setIsLoading] = useState(true); // <--- ADD THIS LINE
   // This useEffect will run ONCE to LOAD data from Firestore
+ // useEffect to LOAD data for the current user
   useEffect(() => {
+    if (!user) return; // Don't run if no user is logged in
     const loadData = async () => {
-      const docRef = doc(db, "userData", "sagar");
+      const docRef = doc(db, "userData", user.uid); // Use the user's unique ID
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        console.log("✅ Data loaded from Firebase!");
         const data = docSnap.data();
         setAttendanceData(data.attendanceData || {});
         setGymData(data.gymData || {});
         setSkinCareData(data.skinCareData || {});
         setGroceryList(data.groceryList || []);
       } else {
-        console.log("No online data found. Using initial app data.");
+        console.log("No online data for this user. Starting fresh.");
       }
-      // Finished loading, allow saving to happen now
       setIsLoading(false);
     };
-
     loadData();
-  }, []); // The empty array [] ensures this runs only once
+  }, [user]); // Rerun this when the user logs in
 
-  // This useEffect will run to SAVE data to Firestore whenever it changes
+  // useEffect to SAVE data for the current user
   useEffect(() => {
-    // DO NOT save data until the initial load is complete
-    if (isLoading) {
-      return; 
-    }
+    if (isLoading || !user) return;
 
     const saveData = async () => {
-      console.log("🔄 Saving data to Firebase...");
-      try {
-        await setDoc(doc(db, "userData", "sagar"), {
-          attendanceData,
-          gymData,
-          skinCareData,
-          groceryList
-        });
-        console.log("✅ Data successfully saved!");
-      } catch (error) {
-        console.error("❌ Error saving data:", error);
-      }
+      console.log("🔄 Saving data to Firebase for user:", user.uid);
+      await setDoc(doc(db, "userData", user.uid), { // Use the user's unique ID
+        attendanceData,
+        gymData,
+        skinCareData,
+        groceryList
+      });
     };
-
     saveData();
-    
-  },[attendanceData, gymData, skinCareData, groceryList, isLoading]);// This runs when the data changes
-  // This useEffect will run once to LOAD data from Firestore when the app starts
-  
+  }, [attendanceData, gymData, skinCareData, groceryList, user, isLoading]);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -502,267 +503,262 @@ function App() {
   // Replace the attendance view section (around lines 380-450) with this:
 
   if (views.attendance) {
-    // Filter subjects into two groups: those needing attention and those that are safe.
     const warningSubjects = Object.keys(attendanceData).filter(subject => getAttendancePercentage(subject) < 75);
     const safeSubjects = Object.keys(attendanceData).filter(subject => getAttendancePercentage(subject) >= 75);
 
     return (
-      <div className="min-h-screen p-6 text-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-200">Attendance Tracker</h1>
-            <button 
-              onClick={() => updateView('attendance', false)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              Back to Home
-            </button>
-          </div>
+      <div className="min-h-screen p-6 text-white relative">
+        <AnimatedBackground />
+        <div className="relative z-10">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="text-3xl font-bold text-gray-200">Attendance Tracker</h1>
+              <button 
+                onClick={() => updateView('attendance', false)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Back to Home
+              </button>
+            </div>
 
-          {/* Section for subjects that need attention */}
-          {warningSubjects.length > 0 && (
-            <section className="mb-10">
-              <h2 className="text-xl font-semibold text-red-400 mb-4">Needs Attention</h2>
+            {warningSubjects.length > 0 && (
+              <section className="mb-10">
+                <h2 className="text-xl font-semibold text-red-400 mb-4">Needs Attention</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {warningSubjects.map(subject => {
+                    const data = attendanceData[subject];
+                    const percentage = getAttendancePercentage(subject);
+                    return (
+                      <Card key={subject} className="p-6 space-y-3 bg-gray-800 text-gray-300">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-xl font-semibold text-gray-200">{subject}</h3>
+                          <div className="flex items-center gap-2 text-red-100 bg-red-500 bg-opacity-50 px-3 py-1 rounded-full">
+                            <FaExclamationTriangle />
+                            <span className="font-bold text-sm">{percentage}%</span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2.5">
+                          <div className="bg-red-500 h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                        </div>
+                        <div className="text-xs text-gray-500">{data.attended} / {data.total} classes attended</div>
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center gap-3">
+                            <button onClick={() => markAttendance(subject, true)} className="icon-button-green"><FaCheck /></button>
+                            <button onClick={() => markAttendance(subject, false)} className="icon-button-red"><FaTimes /></button>
+                          </div>
+                          <button onClick={() => setEditingSubject(editingSubject === subject ? null : subject)} className="icon-button-gray"><FaEdit /></button>
+                        </div>
+                        {editingSubject === subject && (
+                          <div className="border-t border-gray-700 pt-3 space-y-2">
+                            <div className="text-xs text-gray-500">Manual Correction:</div>
+                            <div className="flex gap-2">
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: prev[subject].total + 1 }}))} className="flex-1 edit-button">+</button>
+                              <span className="flex-1 text-center text-sm text-gray-300">Total: {data.total}</span>
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: Math.max(1, prev[subject].total - 1), attended: Math.min(prev[subject].attended, Math.max(1, prev[subject].total - 1)) }}))} className="flex-1 edit-button">-</button>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.min(data.total, prev[subject].attended + 1) }}))} className="flex-1 edit-button">+</button>
+                              <span className="flex-1 text-center text-sm text-gray-300">Attended: {data.attended}</span>
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.max(0, prev[subject].attended - 1) }}))} className="flex-1 edit-button">-</button>
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+            <section>
+              <h2 className="text-xl font-semibold text-green-400 mb-4">On Track</h2>
               <div className="grid md:grid-cols-2 gap-6">
-                {warningSubjects.map(subject => {
+                {safeSubjects.map(subject => {
                   const data = attendanceData[subject];
                   const percentage = getAttendancePercentage(subject);
+                  const color = percentage >= 85 ? 'green' : 'yellow';
                   return (
-                    <Card key={subject} className="p-6 space-y-3">
+                    <Card key={subject} className="p-6 space-y-3 bg-gray-800 text-gray-300">
                       <div className="flex justify-between items-start">
-                        <h3 className="text-xl font-semibold text-gray-800">{subject}</h3>
-                        <div className="flex items-center gap-2 text-red-600 bg-red-100 px-3 py-1 rounded-full">
-                          <FaExclamationTriangle />
+                        <h3 className="text-xl font-semibold text-gray-200">{subject}</h3>
+                        <div className={`flex items-center gap-2 text-${color}-100 bg-${color}-500 bg-opacity-50 px-3 py-1 rounded-full`}>
                           <span className="font-bold text-sm">{percentage}%</span>
                         </div>
                       </div>
-                      
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div className="bg-red-500 h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                      <div className="w-full bg-gray-700 rounded-full h-2.5">
+                        <div className={`bg-${color}-500 h-2.5 rounded-full`} style={{ width: `${percentage}%` }}></div>
                       </div>
                       <div className="text-xs text-gray-500">{data.attended} / {data.total} classes attended</div>
-                      
                       <div className="flex items-center justify-between pt-2">
-                        {/* Group for Present/Absent buttons */}
                         <div className="flex items-center gap-3">
                           <button onClick={() => markAttendance(subject, true)} className="icon-button-green"><FaCheck /></button>
                           <button onClick={() => markAttendance(subject, false)} className="icon-button-red"><FaTimes /></button>
                         </div>
-                        {/* Edit button */}
                         <button onClick={() => setEditingSubject(editingSubject === subject ? null : subject)} className="icon-button-gray"><FaEdit /></button>
                       </div>
-                      {editingSubject === subject && (
-                        <div className="border-t pt-3 space-y-2">
-                          <div className="text-xs text-gray-500">Manual Correction:</div>
-                          <div className="flex gap-2">
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: prev[subject].total + 1 }}))} className="flex-1 edit-button">+</button>
-                            <span className="flex-1 text-center text-sm text-gray-700">Total: {data.total}</span>
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: Math.max(1, prev[subject].total - 1), attended: Math.min(prev[subject].attended, Math.max(1, prev[subject].total - 1)) }}))} className="flex-1 edit-button">-</button>
+                       {editingSubject === subject && (
+                          <div className="border-t border-gray-700 pt-3 space-y-2">
+                            <div className="text-xs text-gray-500">Manual Correction:</div>
+                             <div className="flex gap-2">
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: prev[subject].total + 1 }}))} className="flex-1 edit-button">+</button>
+                              <span className="flex-1 text-center text-sm text-gray-300">Total: {data.total}</span>
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: Math.max(1, prev[subject].total - 1), attended: Math.min(prev[subject].attended, Math.max(1, prev[subject].total - 1)) }}))} className="flex-1 edit-button">-</button>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.min(data.total, prev[subject].attended + 1) }}))} className="flex-1 edit-button">+</button>
+                              <span className="flex-1 text-center text-sm text-gray-300">Attended: {data.attended}</span>
+                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.max(0, prev[subject].attended - 1) }}))} className="flex-1 edit-button">-</button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.min(data.total, prev[subject].attended + 1) }}))} className="flex-1 edit-button">+</button>
-                            <span className="flex-1 text-center text-sm text-gray-700">Attended: {data.attended}</span>
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.max(0, prev[subject].attended - 1) }}))} className="flex-1 edit-button">-</button>
-                          </div>
-                        </div>
-                      )}
+                        )}
                     </Card>
                   );
                 })}
               </div>
             </section>
-          )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // Replace the schedule view section (around lines 450-500) with this:
 
-          {/* Section for subjects that are on track */}
-          <section>
-            <h2 className="text-xl font-semibold text-green-400 mb-4">On Track</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {safeSubjects.map(subject => {
-                const data = attendanceData[subject];
-                const percentage = getAttendancePercentage(subject);
-                const color = percentage >= 85 ? 'green' : 'yellow';
-                return (
-                  <Card key={subject} className="p-6 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-xl font-semibold text-gray-800">{subject}</h3>
-                      <div className={`flex items-center gap-2 text-${color}-600 bg-${color}-100 px-3 py-1 rounded-full`}>
-                        <span className="font-bold text-sm">{percentage}%</span>
-                      </div>
-                    </div>
-
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div className={`bg-${color}-500 h-2.5 rounded-full`} style={{ width: `${percentage}%` }}></div>
-                    </div>
-                    <div className="text-xs text-gray-500">{data.attended} / {data.total} classes attended</div>
-                    
-                    <div className="flex items-center gap-4 pt-2">
-                      <button onClick={() => markAttendance(subject, true)} className="icon-button-green"><FaCheck /></button>
-                      <button onClick={() => markAttendance(subject, false)} className="icon-button-red"><FaTimes /></button>
-                      <button onClick={() => setEditingSubject(editingSubject === subject ? null : subject)} className="icon-button-gray ml-auto"><FaEdit /></button>
-                    </div>
-
-                     {editingSubject === subject && (
-                        <div className="border-t pt-3 space-y-2">
-                          <div className="text-xs text-gray-500">Manual Correction:</div>
-                           <div className="flex gap-2">
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: prev[subject].total + 1 }}))} className="flex-1 edit-button">+</button>
-                            <span className="flex-1 text-center text-sm text-gray-700">Total: {data.total}</span>
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: Math.max(1, prev[subject].total - 1), attended: Math.min(prev[subject].attended, Math.max(1, prev[subject].total - 1)) }}))} className="flex-1 edit-button">-</button>
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.min(data.total, prev[subject].attended + 1) }}))} className="flex-1 edit-button">+</button>
-                            <span className="flex-1 text-center text-sm text-gray-700">Attended: {data.attended}</span>
-                            <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.max(0, prev[subject].attended - 1) }}))} className="flex-1 edit-button">-</button>
-                          </div>
-                        </div>
-                      )}
-                  </Card>
-                );
-              })}
+  if (views.schedule) {
+    return (
+      <div className="min-h-screen p-6 text-white relative">
+        <AnimatedBackground />
+        <div className="relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-gray-200">Class Schedule</h1>
+              <button 
+                onClick={() => updateView('schedule', false)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Back to Home
+              </button>
             </div>
-          </section>
+            
+            <Card className="p-6 overflow-x-auto stylish-schedule-bg">
+              <div className="min-w-full">
+                <table className="w-full border-separate border-spacing-px bg-gray-700 rounded-lg overflow-hidden">
+                  <thead>
+                    <tr>
+                      <th className="p-4 text-left font-semibold text-gray-200 sticky left-0 z-10 bg-gray-800 stabilize">
+                        Time
+                      </th>
+                      <th className="p-4 text-center font-semibold text-gray-200 bg-gray-800">
+                        Monday
+                      </th>
+                      <th className="p-4 text-center font-semibold text-gray-200 bg-gray-800">
+                        Tuesday
+                      </th>
+                      <th className="p-4 text-center font-semibold text-gray-200 bg-gray-800">
+                        Wednesday
+                      </th>
+                      <th className="p-4 text-center font-semibold text-gray-200 bg-gray-800">
+                        Thursday
+                      </th>
+                      <th className="p-4 text-center font-semibold text-gray-200 bg-gray-800">
+                        Friday
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staticData.schedule.map((row, index) => (
+                      <tr key={index}>
+                        <td className="p-4 font-semibold text-gray-200 sticky left-0 z-10 bg-gray-800 stabilize">
+                          {row.time}
+                        </td>
+                        <td className="p-4 text-center bg-gray-800">
+                          <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.monday)}`}>
+                            {row.monday}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center bg-gray-800">
+                          <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.tuesday)}`}>
+                            {row.tuesday}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center bg-gray-800">
+                          <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.wednesday)}`}>
+                            {row.wednesday}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center bg-gray-800">
+                          <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.thursday)}`}>
+                            {row.thursday}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center bg-gray-800">
+                          <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.friday)}`}>
+                            {row.friday}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Replace the schedule view section (around lines 450-500) with this:
-
-if (views.schedule) {
-  return (
-    // This is the correct line for the Schedule view (around line 518)
-<div className="min-h-screen p-6 text-white">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-200">Class Schedule</h1>
-          <button 
-            onClick={() => updateView('schedule', false)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Back to Home
-          </button>
-        </div>
-        
-        <Card className="p-6 overflow-x-auto stylish-schedule-bg">
-          <div className="min-w-full">
-          <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="p-4 text-left font-semibold text-gray-200 sticky left-0 z-10 bg-gray-800 stabilize">
-                      Time
-                    </th>
-                    <th className="p-4 text-center font-semibold text-gray-200 border-l border-gray-700">
-                      Monday
-                    </th>
-                    <th className="p-4 text-center font-semibold text-gray-200 border-l border-gray-700">
-                      Tuesday
-                    </th>
-                    <th className="p-4 text-center font-semibold text-gray-200 border-l border-gray-700">
-                      Wednesday
-                    </th>
-                    <th className="p-4 text-center font-semibold text-gray-200 border-l border-gray-700">
-                      Thursday
-                    </th>
-                    <th className="p-4 text-center font-semibold text-gray-200 border-l border-gray-700">
-                      Friday
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {staticData.schedule.map((row, index) => (
-                    <tr key={index} className="border-b border-gray-700">
-                      <td className="p-4 font-semibold text-gray-200 sticky left-0 z-10 bg-gray-800 stabilize">
-                        {row.time}
-                      </td>
-                      <td className="p-4 text-center border-l border-gray-700">
-                        <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.monday)}`}>
-                          {row.monday}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center border-l border-gray-700">
-                        <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.tuesday)}`}>
-                          {row.tuesday}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center border-l border-gray-700">
-                        <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.wednesday)}`}>
-                          {row.wednesday}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center border-l border-gray-700">
-                        <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.thursday)}`}>
-                          {row.thursday}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center border-l border-gray-700">
-                        <span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.friday)}`}>
-                          {row.friday}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
   if (views.gym) {
     return (
-      <div className="min-h-screen p-6 text-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-200">Gym Tracker</h1>
-            <button 
-              onClick={() => updateView('gym', false)}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-            >
-              Back to Home
-            </button>
-          </div>
-
-          <Card className="p-6 mb-6 bg-gradient-to-r from-red-500 to-orange-500 text-white">
-            <div className="flex items-center gap-3">
-              <FaQuoteLeft className="text-2xl opacity-75" />
-              <p className="text-lg">{randomTips.gym}</p>
+      <div className="min-h-screen p-6 text-white relative">
+        <AnimatedBackground />
+        <div className="relative z-10">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-gray-200">Gym Tracker</h1>
+              <button 
+                onClick={() => updateView('gym', false)}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Back to Home
+              </button>
             </div>
-          </Card>
 
-         
-
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <Card className="p-6 bg-gray-800 text-gray-200">
-              <h3 className="text-xl font-semibold mb-4">Bulking Plan (165cm, 60kg)</h3>
-              <div className="space-y-2 text-sm">
-                <p><strong>Daily Calories:</strong> {staticData.bulkingTips.calories}</p>
-                <p><strong>Protein:</strong> {staticData.bulkingTips.protein}</p>
-                <p><strong>Supplements:</strong> {staticData.bulkingTips.supplements}</p>
+            <Card className="p-6 mb-6 bg-gradient-to-r from-red-500 to-orange-500 text-white">
+              <div className="flex items-center gap-3">
+                <FaQuoteLeft className="text-2xl opacity-75" />
+                <p className="text-lg">{randomTips.gym}</p>
               </div>
             </Card>
 
-            <Card className="p-6 bg-gray-800 text-gray-200">
-              <h3 className="text-xl font-semibold mb-4">Meal Plan</h3>
-              <div className="space-y-1 text-sm">
-                {staticData.bulkingTips.meals.map((meal, index) => (
-                  <p key={index}>{meal}</p>
-                ))}
-              </div>
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <Card className="p-6 bg-gray-800 text-gray-200">
+                <h3 className="text-xl font-semibold mb-4">Bulking Plan (165cm, 60kg)</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Daily Calories:</strong> {staticData.bulkingTips.calories}</p>
+                  <p><strong>Protein:</strong> {staticData.bulkingTips.protein}</p>
+                  <p><strong>Supplements:</strong> {staticData.bulkingTips.supplements}</p>
+                </div>
+              </Card>
+              <Card className="p-6 bg-gray-800 text-gray-200">
+                <h3 className="text-xl font-semibold mb-4">Meal Plan</h3>
+                <div className="space-y-1 text-sm">
+                  {staticData.bulkingTips.meals.map((meal, index) => (
+                    <p key={index}>{meal}</p>
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+            <Card className="stylish-schedule-bg p-0">
+              <CalendarView 
+                type="gym" 
+                gymCalendar={gymData.calendar}
+                skinCareCalendar={skinCareData.calendar}
+                onMarkDay={markGymDay}
+                currentMonth={currentMonth}
+                setCurrentMonth={setCurrentMonth}
+              />
             </Card>
           </div>
-
-          <Card>
-            <CalendarView 
-              type="gym" 
-              gymCalendar={gymData.calendar}
-              skinCareCalendar={skinCareData.calendar}
-              onMarkDay={markGymDay}
-              currentMonth={currentMonth}
-              setCurrentMonth={setCurrentMonth}
-            />
-          </Card>
         </div>
       </div>
     );
@@ -772,53 +768,56 @@ if (views.schedule) {
     const todayRoutine = staticData.skinCareRoutine[getCurrentDay()];
     
     return (
-      <div className="min-h-screen p-6 text-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-200">Skincare Routine</h1>
-            <button 
-              onClick={() => updateView('skinCare', false)}
-              className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
-            >
-              Back to Home
-            </button>
+      <div className="min-h-screen p-6 text-white relative">
+        <AnimatedBackground />
+        <div className="relative z-10">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-gray-200">Skincare Routine</h1>
+              <button 
+                onClick={() => updateView('skinCare', false)}
+                className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+              >
+                Back to Home
+              </button>
+            </div>
+
+            <Card className="p-6 mb-6 bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+              <div className="flex items-center gap-3">
+                <FaQuoteLeft className="text-2xl opacity-75" />
+                <p className="text-lg">{randomTips.skincare}</p>
+              </div>
+            </Card>
+
+            <Card className="p-6 mb-6 bg-gray-800">
+              <h2 className="text-2xl font-semibold text-gray-200 mb-4">Today's Routine - {getCurrentDay()}</h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="p-4 bg-gray-700 rounded-lg">
+                  <h3 className="font-semibold text-yellow-300 mb-2">Morning</h3>
+                  <p className="text-gray-300">{todayRoutine.morning}</p>
+                </div>
+                <div className="p-4 bg-gray-700 rounded-lg">
+                  <h3 className="font-semibold text-purple-300 mb-2">Night</h3>
+                  <p className="text-gray-300">{todayRoutine.night}</p>
+                </div>
+              </div>
+              <div className="mt-4 p-4 bg-gray-700 rounded-lg">
+                <h3 className="font-semibold text-blue-300 mb-2">Notes</h3>
+                <p className="text-gray-300">{todayRoutine.notes}</p>
+              </div>
+            </Card>
+
+            <Card className="stylish-schedule-bg p-0">
+              <CalendarView 
+                type="skincare" 
+                gymCalendar={gymData.calendar}
+                skinCareCalendar={skinCareData.calendar}
+                onMarkDay={markSkinCareDay}
+                currentMonth={currentMonth}
+                setCurrentMonth={setCurrentMonth}
+              />
+            </Card>
           </div>
-
-          <Card className="p-6 mb-6 bg-gradient-to-r from-pink-500 to-purple-500 text-white">
-            <div className="flex items-center gap-3">
-              <FaQuoteLeft className="text-2xl opacity-75" />
-              <p className="text-lg">{randomTips.skincare}</p>
-            </div>
-          </Card>
-
-          <Card className="p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Today's Routine - {getCurrentDay()}</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <h3 className="font-semibold text-yellow-800 mb-2">Morning</h3>
-                <p className="text-gray-700">{todayRoutine.morning}</p>
-              </div>
-              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <h3 className="font-semibold text-purple-800 mb-2">Night</h3>
-                <p className="text-gray-700">{todayRoutine.night}</p>
-              </div>
-            </div>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="font-semibold text-blue-800 mb-2">Notes</h3>
-              <p className="text-gray-700">{todayRoutine.notes}</p>
-            </div>
-          </Card>
-
-          <Card>
-            <CalendarView 
-              type="skincare" 
-              gymCalendar={gymData.calendar}
-              skinCareCalendar={skinCareData.calendar}
-              onMarkDay={markSkinCareDay}
-              currentMonth={currentMonth}
-              setCurrentMonth={setCurrentMonth}
-            />
-          </Card>
         </div>
       </div>
     );
@@ -826,58 +825,61 @@ if (views.schedule) {
 
   if (views.style) {
     return (
-      <div className="min-h-screen p-6 text-white">
-        <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-200">Style Guide</h1>
-          <button 
-            onClick={() => updateView('style', false)}
-            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-medium border-2 border-gray-600"
-          >
-            Back to Home
-          </button>
-        </div>
+      <div className="min-h-screen p-6 text-white relative">
+        <AnimatedBackground />
+        <div className="relative z-10">
+          <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-gray-200">Style Guide</h1>
+            <button 
+              onClick={() => updateView('style', false)}
+              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-medium border-2 border-gray-600"
+            >
+              Back to Home
+            </button>
+          </div>
 
-          <Card className="p-6 mb-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-            <div className="flex items-center gap-3">
-              <FaTshirt className="text-2xl" />
-              <div>
-                <h2 className="text-xl font-semibold">Personal Style Consultant</h2>
-                <p className="opacity-90">Tailored for 165cm, 60kg - Creating a taller, leaner silhouette</p>
+            <Card className="p-6 mb-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+              <div className="flex items-center gap-3">
+                <FaTshirt className="text-2xl" />
+                <div>
+                  <h2 className="text-xl font-semibold">Personal Style Consultant</h2>
+                  <p className="opacity-90">Tailored for 165cm, 60kg - Creating a taller, leaner silhouette</p>
+                </div>
               </div>
+            </Card>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="p-6 bg-gray-800">
+                <h3 className="text-xl font-semibold text-green-400 mb-4">✅ Best Colors for You</h3>
+                <div className="space-y-2">
+                  {staticData.styleGuide.bestColors.map((color, index) => (
+                    <p key={index} className="text-gray-300 text-sm">{color}</p>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="p-6 bg-gray-800">
+                <h3 className="text-xl font-semibold text-red-400 mb-4">❌ Colors to Avoid</h3>
+                <div className="space-y-2">
+                  {staticData.styleGuide.avoidColors.map((color, index) => (
+                    <p key={index} className="text-gray-300 text-sm">{color}</p>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="p-6 md:col-span-2 bg-gray-800">
+                <h3 className="text-xl font-semibold text-blue-400 mb-4">💡 Style Tips</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {staticData.styleGuide.tips.map((tip, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full mt-1.5"></div>
+                      <p className="text-gray-300 text-sm">{tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </div>
-          </Card>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="p-6 bg-gray-800">
-              <h3 className="text-xl font-semibold text-green-400 mb-4">✅ Best Colors for You</h3>
-              <div className="space-y-2">
-                {staticData.styleGuide.bestColors.map((color, index) => (
-                  <p key={index} className="text-gray-300 text-sm">{color}</p>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-gray-800">
-              <h3 className="text-xl font-semibold text-red-400 mb-4">❌ Colors to Avoid</h3>
-              <div className="space-y-2">
-                {staticData.styleGuide.avoidColors.map((color, index) => (
-                  <p key={index} className="text-gray-300 text-sm">{color}</p>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-6 md:col-span-2 bg-gray-800">
-              <h3 className="text-xl font-semibold text-blue-400 mb-4">💡 Style Tips</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                {staticData.styleGuide.tips.map((tip, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full mt-1.5"></div>
-                    <p className="text-gray-300 text-sm">{tip}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
           </div>
         </div>
       </div>
@@ -886,72 +888,72 @@ if (views.schedule) {
 
   if (views.grocery) {
     return (
-      <div className="min-h-screen p-6 text-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-200">Grocery List</h1>
-            <button 
-              onClick={() => updateView('grocery', false)}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              Back to Home
-            </button>
-          </div>
-
-          {/* Input Card - Restyled for dark theme */}
-          <Card className="p-6 mb-6 bg-gray-800">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newGroceryItem}
-                onChange={(e) => setNewGroceryItem(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addGroceryItem()}
-                placeholder="Add grocery item..."
-                className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-              <button
-                onClick={addGroceryItem}
+      <div className="min-h-screen p-6 text-white relative">
+        <AnimatedBackground />
+        <div className="relative z-10">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-gray-200">Grocery List</h1>
+              <button 
+                onClick={() => updateView('grocery', false)}
                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
               >
-                <FaPlus />
+                Back to Home
               </button>
             </div>
-          </Card>
 
-          {/* Grocery Items List - Restyled for dark theme */}
-          <div className="grid gap-3">
-            {groceryList.map(item => (
-              <Card key={item.id} className="p-4 bg-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={item.completed}
-                      onChange={() => toggleGroceryItem(item.id)}
-                      className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600"
-                    />
-                    <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>
-                      {item.text}
-                    </span>
+            <Card className="p-6 mb-6 bg-gray-800">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newGroceryItem}
+                  onChange={(e) => setNewGroceryItem(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addGroceryItem()}
+                  placeholder="Add grocery item..."
+                  className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <button
+                  onClick={addGroceryItem}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  <FaPlus />
+                </button>
+              </div>
+            </Card>
+
+            <div className="grid gap-3">
+              {groceryList.map(item => (
+                <Card key={item.id} className="p-4 bg-gray-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        onChange={() => toggleGroceryItem(item.id)}
+                        className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600"
+                      />
+                      <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>
+                        {item.text}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => deleteGroceryItem(item.id)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                    >
+                      <FaTrash />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => deleteGroceryItem(item.id)}
-                    className="text-red-500 hover:text-red-700 p-1"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </Card>
-            ))}
-            
-            {/* Empty State Card - Restyled for dark theme */}
-            {groceryList.length === 0 && (
-              <Card className="p-8 text-center bg-gray-800">
-                <FaShoppingCart className="text-4xl text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-300">No items in your grocery list yet</p>
-                <p className="text-sm text-gray-400">Add items above to get started</p>
-              </Card>
-            )}
+                </Card>
+              ))}
+              
+              {groceryList.length === 0 && (
+                <Card className="p-8 text-center bg-gray-800">
+                  <FaShoppingCart className="text-4xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300">No items in your grocery list yet</p>
+                  <p className="text-sm text-gray-400">Add items above to get started</p>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -964,27 +966,36 @@ if (views.schedule) {
   const pendingGroceries = groceryList.filter(item => !item.completed).length;
   
   // Replace the main dashboard container in App.js with this:
+  if (!user) {
+    return <LoginPage />;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white">
-      <div className="max-w-4xl mx-auto p-6 space-y-16">
+    <div className="min-h-screen text-white relative">
+  <AnimatedBackground />
+  <div className="max-w-4xl mx-auto p-6 space-y-16 relative z-10">
         {/* Hero Section */}
         <div className="relative overflow-hidden">
           <div className="text-center py-12 relative z-10">
-          <div className="mb-8">
-  <h1 className="text-7xl font-bold flex items-center justify-center gap-6">
-    <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-      Hi, Sagar
-    </span>
-    <img 
-  src="/profile.jpg" 
-  alt="Sagar's profile"
-  className={`profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover ${isAnimating ? 'animate-flip' : ''}`}
-  onClick={handleImageClick}
-/>
-  </h1>
-  <p className="text-2xl text-gray-300 font-medium mt-2">Welcome back to your personal dashboard</p>
-</div>
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <h1 className="text-7xl font-bold flex items-center justify-center gap-6">
+              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                Hi, {user.email.split('@')[0]}
+              </span>
+              <img 
+                src="/profile.jpg" 
+                alt="Sagar's profile"
+                className={`profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover ${isAnimating ? 'animate-flip' : ''}`}
+                onClick={handleImageClick}
+              />
+            </h1>
+            <button
+              onClick={() => signOut(auth)}
+              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg self-center"
+            >
+              Logout
+            </button>
+          </div>
             {/* Daily Quote Card is fine, it has its own background */}
             <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 text-white relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>

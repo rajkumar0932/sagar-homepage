@@ -227,11 +227,9 @@ function App() {
   // This useEffect will run to LOAD data for the CURRENT user
  // useEffect to LOAD data for the current user
 // useEffect to LOAD data for the CURRENT user
-// useEffect to LOAD data for the current user
 useEffect(() => {
   if (!user) {
     setUserProfile(null);
-    setIsLoading(false); // Stop loading if no user
     return; 
   }
   
@@ -248,15 +246,16 @@ useEffect(() => {
       setSkinCareData(data.skinCareData || {});
       setGroceryList(data.groceryList || []);
     } else {
-      console.log("No online data for this new user. Creating default data.");
-      const defaultProfile = { firstName: user.email.split('@')[0], lastName: '' };
-      const defaultAttendance = {
-        'EIM(SB)': { attended: 8, total: 12 }, 'DSP(SRC)': { attended: 9, total: 11 },
-        'ADC(TM)': { attended: 7, total: 10 }, 'IM(ABC)': { attended: 6, total: 9 },
-        'MPMC': { attended: 10, total: 12 }, 'LAB': { attended: 8, total: 10 }
-      };
-      setUserProfile(defaultProfile);
-      setAttendanceData(defaultAttendance);
+      console.log("No online data for this new user. Setting default data.");
+      setUserProfile({ firstName: user.email.split('@')[0] });
+      setAttendanceData({
+        'EIM(SB)': { attended: 8, total: 12 },
+        'DSP(SRC)': { attended: 9, total: 11 },
+        'ADC(TM)': { attended: 7, total: 10 },
+        'IM(ABC)': { attended: 6, total: 9 },
+        'MPMC': { attended: 10, total: 12 },
+        'LAB': { attended: 8, total: 10 }
+      });
       setGymData({ streak: 0, calendar: {} });
       setSkinCareData({ streak: 0, calendar: {} });
       setGroceryList([]);
@@ -265,17 +264,16 @@ useEffect(() => {
   };
 
   loadData();
-}, [user]); // This should ONLY depend on the user object
+}, [user, setUserProfile]); // Added setUserProfile
 
-// useEffect to SAVE data for the current user
+// useEffect to SAVE data for the CURRENT user
 useEffect(() => {
-  // Don't save anything until loading is finished and a user is logged in
   if (isLoading || !user) return;
 
   const saveData = async () => {
     console.log("🔄 Saving data to Firebase for user:", user.uid);
     await setDoc(doc(db, "userData", user.uid), {
-      ...userProfile,
+      ...userProfile, // Added userProfile to save
       attendanceData,
       gymData,
       skinCareData,
@@ -285,8 +283,7 @@ useEffect(() => {
 
   saveData();
   
-},  [attendanceData, gymData, skinCareData, groceryList, userProfile, isLoading, user]); // This should depend on the data states
-
+}, [attendanceData, gymData, skinCareData, groceryList, user, isLoading, userProfile]); // Added userProfile
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
 

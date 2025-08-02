@@ -8,7 +8,7 @@ import LoginPage from './LoginPage';
 import { 
   FaCalendarAlt, FaCheckCircle, FaClipboardList, FaDumbbell, FaAppleAlt, FaSpa,
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart, 
-  FaChevronLeft, FaChevronRight, FaPlus, FaTrash, FaCheck, FaTimes, FaEdit
+  FaChevronLeft, FaChevronRight, FaPlus,  FaCheck, FaTimes, FaEdit
 } from 'react-icons/fa';
 
 // Reusable Card Component
@@ -291,14 +291,30 @@ function App() {
   
   const deleteGroceryItem = useCallback((id) => setGroceryList(prev => prev.filter(item => item.id !== id)), []);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen relative">
-        <AnimatedBackground />
-        <div className="relative z-10 flex items-center justify-center h-screen text-white text-xl">Loading...</div>
+  // Replace your current loading section with this:
+
+if (isLoading) {
+  return (
+    <div className="min-h-screen relative">
+      <AnimatedBackground />
+      <div className="relative z-10 flex items-center justify-center h-screen">
+        <div className="loader-wrapper">
+          <span className="loader-letter">L</span>
+          <span className="loader-letter">o</span>
+          <span className="loader-letter">a</span>
+          <span className="loader-letter">d</span>
+          <span className="loader-letter">i</span>
+          <span className="loader-letter">n</span>
+          <span className="loader-letter">g</span>
+          <span className="loader-letter">.</span>
+          <span className="loader-letter">.</span>
+          <span className="loader-letter">.</span>
+          <div className="loader"></div>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
   
   if (!user) {
     return <LoginPage />;
@@ -318,9 +334,18 @@ function App() {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-200">Attendance Tracker</h1>
-              <button onClick={() => updateView('attendance', false)} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                Back to Home
-              </button>
+              
+<button 
+  onClick={() => updateView('attendance', false)} 
+  className="animated-back-btn"
+>
+  <div className="back-sign">
+    <svg viewBox="0 0 512 512">
+      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+    </svg>
+  </div>
+  <div className="back-text">Back</div>
+</button>
             </div>
             {warningSubjects.length > 0 && (
               <section className="mb-10">
@@ -432,7 +457,17 @@ function App() {
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Class Schedule</h1>
-              <button onClick={() => updateView('schedule', false)} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Back to Home</button>
+              <button 
+  onClick={() => updateView('schedule', false)} 
+  className="animated-back-btn"
+>
+  <div className="back-sign">
+    <svg viewBox="0 0 512 512">
+      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+    </svg>
+  </div>
+  <div className="back-text">Back</div>
+</button>
             </div>
             <Card className="p-6 overflow-x-auto stylish-schedule-bg bg-gray-800">
               <div className="min-w-full">
@@ -476,9 +511,18 @@ function App() {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Gym Tracker</h1>
-              <button onClick={() => updateView('gym', false)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-                Back to Home
-              </button>
+              <button 
+  onClick={() => updateView('gym', false)} 
+  className="animated-back-btn"
+>
+  <div className="back-sign">
+    <svg viewBox="0 0 512 512">
+      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+    </svg>
+  </div>
+  <div className="back-text">Back</div>
+</button>
+
             </div>
             <Card className="p-6 mb-6 bg-gradient-to-r from-red-500 to-orange-500 text-white">
               <div className="flex items-center gap-3">
@@ -520,9 +564,17 @@ function App() {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Skincare Routine</h1>
-              <button onClick={() => updateView('skinCare', false)} className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors">
-                Back to Home
-              </button>
+              <button 
+  onClick={() => updateView('skinCare', false)} 
+  className="animated-back-btn"
+>
+  <div className="back-sign">
+    <svg viewBox="0 0 512 512">
+      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+    </svg>
+  </div>
+  <div className="back-text">Back</div>
+</button>
             </div>
             <Card className="p-6 mb-6 bg-gradient-to-r from-pink-500 to-purple-500 text-white">
               <div className="flex items-center gap-3">
@@ -564,9 +616,18 @@ function App() {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Style Guide</h1>
-              <button onClick={() => updateView('style', false)} className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-medium border-2 border-gray-600">
-                Back to Home
-              </button>
+              <button 
+  onClick={() => updateView('style', false)} 
+  className="animated-back-btn"
+>
+  <div className="back-sign">
+    <svg viewBox="0 0 512 512">
+      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+    </svg>
+  </div>
+  <div className="back-text">Back</div>
+</button>
+
             </div>
             <Card className="p-6 mb-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
               <div className="flex items-center gap-3">
@@ -616,9 +677,18 @@ function App() {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Grocery List</h1>
-              <button onClick={() => updateView('grocery', false)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                Back to Home
-              </button>
+              <button 
+  onClick={() => updateView('grocery', false)} 
+  className="animated-back-btn"
+>
+  <div className="back-sign">
+    <svg viewBox="0 0 512 512">
+      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+    </svg>
+  </div>
+  <div className="back-text">Back</div>
+</button>
+
             </div>
             <Card className="p-6 mb-6 bg-gray-800">
               <div className="flex gap-2">
@@ -626,26 +696,44 @@ function App() {
                 <button onClick={addGroceryItem} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"><FaPlus /></button>
               </div>
             </Card>
+           
             <div className="grid gap-3">
-              {groceryList.map(item => (
-                <Card key={item.id} className="p-4 bg-gray-800">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <input type="checkbox" checked={item.completed} onChange={() => toggleGroceryItem(item.id)} className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600" />
-                      <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>{item.text}</span>
-                    </div>
-                    <button onClick={() => deleteGroceryItem(item.id)} className="text-red-500 hover:text-red-700 p-1"><FaTrash /></button>
-                  </div>
-                </Card>
-              ))}
-              {groceryList.length === 0 && (
-                <Card className="p-8 text-center bg-gray-800">
-                  <FaShoppingCart className="text-4xl text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-300">No items yet</p>
-                  <p className="text-sm text-gray-400">Add items above to get started</p>
-                </Card>
-              )}
-            </div>
+  {groceryList.map(item => (
+    <Card key={item.id} className="p-4 bg-gray-800">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <input 
+            type="checkbox" 
+            checked={item.completed} 
+            onChange={() => toggleGroceryItem(item.id)} 
+            className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600" 
+          />
+          <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>
+            {item.text}
+          </span>
+        </div>
+        
+        {/* Animated Delete Button */}
+        <button 
+          onClick={() => deleteGroceryItem(item.id)} 
+          className="animated-delete-button"
+        >
+          <svg viewBox="0 0 448 512" className="delete-svg-icon">
+            <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path>
+          </svg>
+        </button>
+      </div>
+    </Card>
+  ))}
+  
+  {groceryList.length === 0 && (
+    <Card className="p-8 text-center bg-gray-800">
+      <FaShoppingCart className="text-4xl text-gray-400 mx-auto mb-4" />
+      <p className="text-gray-300">No items yet</p>
+      <p className="text-sm text-gray-400">Add items above to get started</p>
+    </Card>
+  )}
+</div>
           </div>
         </div>
       </div>
@@ -669,9 +757,17 @@ function App() {
                 </span>
                 <img src="/profile.jpg" alt="Sagar's profile" className={`profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover ${isAnimating ? 'animate-flip' : ''}`} onClick={handleImageClick} />
               </h1>
-              <button onClick={() => signOut(auth)} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg self-center">
-                Logout
-              </button>
+              <button 
+  onClick={() => signOut(auth)} 
+  className="animated-logout-btn"
+>
+  <div className="logout-sign">
+    <svg viewBox="0 0 512 512">
+      <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
+    </svg>
+  </div>
+  <div className="logout-text">Logout</div>
+</button>
             </div>
             <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 text-white relative">
             

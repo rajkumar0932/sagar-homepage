@@ -1,130 +1,136 @@
-/* From Uiverse.io by Yaya12085 */ 
-.form-container {
-    width: 320px;
-    border-radius: 0.75rem;
-    background-color: rgba(17, 24, 39, 1);
-    padding: 2rem;
-    color: rgba(243, 244, 246, 1);
-  }
-  
-  .title {
-    text-align: center;
-    font-size: 1.5rem;
-    line-height: 2rem;
-    font-weight: 700;
-  }
-  
-  .form {
-    margin-top: 1.5rem;
-  }
-  
-  .input-group {
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-  
-  .input-group label {
-    display: block;
-    color: rgba(156, 163, 175, 1);
-    margin-bottom: 4px;
-  }
-  
-  .input-group input {
-    width: 100%;
-    border-radius: 0.375rem;
-    border: 1px solid rgba(55, 65, 81, 1);
-    outline: 0;
-    background-color: rgba(17, 24, 39, 1);
-    padding: 0.75rem 1rem;
-    color: rgba(243, 244, 246, 1);
-  }
-  
-  .input-group input:focus {
-    border-color: rgba(167, 139, 250);
-  }
-  
-  .forgot {
+/* From Uiverse.io by ammarsaa */
+.new-form {
     display: flex;
-    justify-content: flex-end;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    color: rgba(156, 163, 175,1);
-    margin: 8px 0 14px 0;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+    padding: 20px;
+    border-radius: 20px;
+    position: relative;
+    background-color: #1a1a1a;
+    color: #fff;
+    border: 1px solid #333;
   }
   
-  .forgot a,.signup a {
-    color: rgba(243, 244, 246, 1);
-    text-decoration: none;
-    font-size: 14px;
+  .new-title {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -1px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding-left: 30px;
+    color: #00bfff;
   }
   
-  .forgot a:hover, .signup a:hover {
-    text-decoration: underline rgba(167, 139, 250, 1);
+  .new-title::before,
+  .new-title::after {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    left: 0px;
+    background-color: #00bfff;
   }
   
-  .sign {
-    display: block;
-    width: 100%;
-    background-color: rgba(167, 139, 250, 1);
-    padding: 0.75rem;
+  .new-title::after {
+    width: 18px;
+    height: 18px;
+    animation: pulse 1s linear infinite;
+  }
+  
+  .new-message, 
+  .new-signin {
+    font-size: 14.5px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .new-signin {
     text-align: center;
-    color: rgba(17, 24, 39, 1);
-    border: none;
-    border-radius: 0.375rem;
+  }
+  
+  .new-signin a {
+    color: #00bfff;
+  }
+  
+  .new-signin a:hover {
+    text-decoration: underline royalblue;
+  }
+  
+  .new-flex {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+  
+  .new-form label {
+    position: relative;
+  }
+  
+  .new-form label .input {
+    background-color: #333;
+    color: #fff;
+    width: 100%;
+    padding: 20px 05px 05px 10px;
+    outline: 0;
+    border: 1px solid rgba(105, 105, 105, 0.397);
+    border-radius: 10px;
+    font-size: medium;
+  }
+  
+  .new-form label .input + span {
+    color: rgba(255, 255, 255, 0.5);
+    position: absolute;
+    left: 10px;
+    top: 0px;
+    font-size: 0.9em;
+    cursor: text;
+    transition: 0.3s ease;
+  }
+  
+  .new-form label .input:placeholder-shown + span {
+    top: 12.5px;
+    font-size: 0.9em;
+  }
+  
+  .new-form label .input:focus + span,
+  .new-form label .input:valid + span {
+    color: #00bfff;
+    top: 0px;
+    font-size: 0.7em;
     font-weight: 600;
   }
   
-  .social-message {
-    display: flex;
-    align-items: center;
-    padding-top: 1rem;
-  }
-  
-  .line {
-    height: 1px;
-    flex: 1 1 0%;
-    background-color: rgba(55, 65, 81, 1);
-  }
-  
-  .social-message .message {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    color: rgba(156, 163, 175, 1);
-  }
-  
-  .social-icons {
-    display: flex;
-    justify-content: center;
-  }
-  
-  .social-icons .icon {
-    border-radius: 0.125rem;
-    padding: 0.75rem;
+  .new-submit {
     border: none;
-    background-color: transparent;
-    margin-left: 8px;
+    outline: none;
+    padding: 10px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+    transform: .3s ease;
+    background-color: #00bfff;
   }
   
-  .social-icons .icon svg {
-    height: 1.25rem;
-    width: 1.25rem;
-    fill: #fff;
+  .new-submit:hover {
+    background-color: #00bfff96;
   }
   
-  .signup {
-    text-align: center;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    color: rgba(156, 163, 175, 1);
+  @keyframes pulse {
+    from {
+      transform: scale(0.9);
+      opacity: 1;
+    }
+    to {
+      transform: scale(1.8);
+      opacity: 0;
+    }
   }
+  
   .login-page-background {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #111827;
-    background-image: linear-gradient(to bottom right, #111827, #3d1766, #000000);
   }

@@ -185,6 +185,7 @@ const CalendarView = ({ type, gymCalendar, skinCareCalendar, onMarkDay, currentM
 
 function App() {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
 
   // This hook will run once and listen for login/logout changes
   useEffect(() => {
@@ -231,56 +232,85 @@ function App() {
   // This useEffect will run ONCE to LOAD data from Firestore
  // useEffect to LOAD data for the current user
   // This useEffect will run to LOAD data for the CURRENT user
+  // This useEffect will run to LOAD data for the CURRENT user
   useEffect(() => {
     // Don't do anything if no user is logged in
     if (!user) {
+      setUserProfile(null); // Clear profile when user logs out
       setIsLoading(false);
-      return;
+      return; 
     }
     
     const loadData = async () => {
       setIsLoading(true);
-      // Use the logged-in user's unique ID to find their specific document
-      const docRef = doc(db, "userData", user.uid); 
+      const docRef = doc(db, "userData", user.uid);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
         const data = docSnap.data();
+        setUserProfile(data); 
         setAttendanceData(data.attendanceData || {});
         setGymData(data.gymData || {});
         setSkinCareData(data.skinCareData || {});
         setGroceryList(data.groceryList || []);
       } else {
-        console.log("No online data for this user. Starting with default data.");
+        // This is a new user, create their first document with default data
+        console.log("No online data for this new user. Creating default data.");
+        const defaultProfile = { firstName: user.email.split('@')[0], lastName: '' };
+        const defaultAttendance = {
+          'EIM(SB)': { attended: 0, total: 0 }, 'DSP(SRC)': { attended: 0, total: 0 },
+          'ADC(TM)': { attended: 0, total: 0 }, 'IM(ABC)': { attended: 0, total: 0 },
+          'MPMC': { attended: 0, total: 0 }, 'LAB': { attended: 0, total: 0 }
+        };
+        const defaultGym = { streak: 0, calendar: {} };
+        const defaultSkin = { streak: 0, calendar: {} };
+        const defaultGrocery = [];
+
+        // Set the state for the new user
+        setUserProfile(defaultProfile);
+        setAttendanceData(defaultAttendance);
+        setGymData(defaultGym);
+        setSkinCareData(defaultSkin);
+        setGroceryList(defaultGrocery);
+        
+        // Save this initial data immediately for the new user
+        await setDoc(docRef, {
+          ...defaultProfile,
+          attendanceData: defaultAttendance,
+          gymData: defaultGym,
+          skinCareData: defaultSkin,
+          groceryList: defaultGrocery
+        });
       }
       setIsLoading(false);
     };
 
     loadData();
-  }, [user]); // This hook now runs only when a user logs in or out
+  }, [user]);
 
   // This useEffect will run to SAVE data for the CURRENT user
   useEffect(() => {
     // Don't save anything until loading is finished and a user is logged in
-    if (isLoading || !user) {
-      return;
-    }
+    if (isLoading || !user) return;
 
-    const saveData = async () => {
-      console.log("🔄 Saving data to Firebase for user:", user.uid);
-      // Use the logged-in user's unique ID to save to their specific document
-      await setDoc(doc(db, "userData", user.uid), {
-        attendanceData,
-        gymData,
-        skinCareData,
-        groceryList
-      });
-    };
+    // Debounce saving to prevent too many writes
+    const handler = setTimeout(() => {
+      const saveData = async () => {
+        console.log("🔄 Saving data to Firebase for user:", user.uid);
+        await setDoc(doc(db, "userData", user.uid), {
+          ...userProfile,
+          attendanceData,
+          gymData,
+          skinCareData,
+          groceryList
+        });
+      };
+      saveData();
+    }, 1500); // Wait 1.5 seconds after the last change to save
 
-    saveData();
+    return () => clearTimeout(handler);
     
-  }, [attendanceData, gymData, skinCareData, groceryList, user, isLoading]); // This runs when data changes
-
+  }, [attendanceData, gymData, skinCareData, groceryList, userProfile, user, isLoading]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
 
@@ -995,7 +1025,7 @@ function App() {
           <div className="flex items-center justify-center gap-4 mb-8">
             <h1 className="text-7xl font-bold flex items-center justify-center gap-6">
               <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                Hi, {user.email.split('@')[0]}
+              Hi, {userProfile?.firstName || user.email.split('@')[0]}
               </span>
               <img 
                 src="/profile.jpg" 
@@ -1189,3 +1219,5 @@ function App() {
 }
 
 export default App;
+
+

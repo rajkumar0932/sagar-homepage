@@ -7,7 +7,7 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword 
 } from "firebase/auth";
-import './LoginPage.css'; // Import the NEW CSS
+import './LoginPage.css';
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,20 +29,35 @@ const LoginPage = () => {
         setError("Invalid email or password. Please try again.");
       }
     } else {
+      // Handle Sign Up
       if (password !== confirmPassword) {
         setError("Passwords do not match.");
         return;
       }
+      // Replace it with this block
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
+        // Create the new user's document with ALL default data
         await setDoc(doc(db, "userData", user.uid), {
           firstName: firstName,
           lastName: lastName,
-          email: user.email
+          email: user.email,
+          attendanceData: {
+            'EIM(SB)': { attended: 0, total: 0 },
+            'DSP(SRC)': { attended: 0, total: 0 },
+            'ADC(TM)': { attended: 0, total: 0 },
+            'IM(ABC)': { attended: 0, total: 0 },
+            'MPMC': { attended: 0, total: 0 },
+            'LAB': { attended: 0, total: 0 }
+          },
+          gymData: { streak: 0, calendar: {} },
+          skinCareData: { streak: 0, calendar: {} },
+          groceryList: []
         });
-      } catch (err) {
+
+      } catch (err) { //...
         if (err.code === 'auth/email-already-in-use') {
           setError('This email is already registered.');
         } else {

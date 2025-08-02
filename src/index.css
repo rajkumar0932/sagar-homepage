@@ -534,3 +534,46 @@ th, td { text-align: left; padding: 0.75rem; }
 .text-purple-400 { color: #c084fc; }
 .hover\:underline:hover { text-decoration: underline; }
 .ml-1 { margin-left: 0.25rem; }
+/* Add these missing classes to your CSS file */
+
+/* Grid utilities */
+.grid-cols-7 { 
+  grid-template-columns: repeat(7, minmax(0, 1fr)); 
+}
+
+.gap-1 { 
+  gap: 0.25rem; 
+}
+
+/* Aspect ratio utility */
+.aspect-square { 
+  aspect-ratio: 1 / 1; 
+}
+
+/* Additional text colors for dark theme */
+.text-gray-200 { 
+  color: #e5e7eb; 
+}
+
+.text-gray-400 { 
+  color: #9ca3af; 
+}
+
+.text-gray-500 { 
+  color: #6b7280; 
+}
+
+/* Purple background for marked days */
+.bg-purple-600 { 
+  background-color: #9333ea; 
+}
+
+/* Hover states */
+.hover\:bg-gray-600:hover { 
+  background-color: #4b5563; 
+}
+
+/* Ensure proper text display */
+.text-gray-300 { 
+  color: #d1d5db; 
+}

@@ -230,10 +230,18 @@ function App() {
   const [isLoading, setIsLoading] = useState(true); // <--- ADD THIS LINE
   // This useEffect will run ONCE to LOAD data from Firestore
  // useEffect to LOAD data for the current user
+  // This useEffect will run to LOAD data for the CURRENT user
   useEffect(() => {
-    if (!user) return; // Don't run if no user is logged in
+    // Don't do anything if no user is logged in
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    
     const loadData = async () => {
-      const docRef = doc(db, "userData", user.uid); // Use the user's unique ID
+      setIsLoading(true);
+      // Use the logged-in user's unique ID to find their specific document
+      const docRef = doc(db, "userData", user.uid); 
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -243,28 +251,35 @@ function App() {
         setSkinCareData(data.skinCareData || {});
         setGroceryList(data.groceryList || []);
       } else {
-        console.log("No online data for this user. Starting fresh.");
+        console.log("No online data for this user. Starting with default data.");
       }
       setIsLoading(false);
     };
-    loadData();
-  }, [user]); // Rerun this when the user logs in
 
-  // useEffect to SAVE data for the current user
+    loadData();
+  }, [user]); // This hook now runs only when a user logs in or out
+
+  // This useEffect will run to SAVE data for the CURRENT user
   useEffect(() => {
-    if (isLoading || !user) return;
+    // Don't save anything until loading is finished and a user is logged in
+    if (isLoading || !user) {
+      return;
+    }
 
     const saveData = async () => {
       console.log("🔄 Saving data to Firebase for user:", user.uid);
-      await setDoc(doc(db, "userData", user.uid), { // Use the user's unique ID
+      // Use the logged-in user's unique ID to save to their specific document
+      await setDoc(doc(db, "userData", user.uid), {
         attendanceData,
         gymData,
         skinCareData,
         groceryList
       });
     };
+
     saveData();
-  }, [attendanceData, gymData, skinCareData, groceryList, user, isLoading]);
+    
+  }, [attendanceData, gymData, skinCareData, groceryList, user, isLoading]); // This runs when data changes
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
 

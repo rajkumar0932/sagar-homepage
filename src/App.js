@@ -9,7 +9,7 @@ import {
   FaCalendarAlt, FaCheckCircle, FaClipboardList, FaDumbbell, FaAppleAlt, 
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart, 
   FaChevronLeft, FaChevronRight, FaPlus,  FaCheck, FaTimes, FaEdit,
-  FaCode, FaTrophy // Add these new icons
+  FaCode // Add these new icons
 } from 'react-icons/fa';
 // Reusable Card Component
 const Card = ({ children, className = "", onClick }) => (
@@ -120,13 +120,14 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
 
 
 // Updated Component for the Coding Dashboard
-const CodingDashboard = ({ onClose, codingData, isEditing, onEditToggle, onDataChange }) => {
-  // This array now points to your images in the /public folder
+const CodingDashboard = ({ onClose, codingData, isLoading, isEditing, onEdit, onSave, tempHandles, setTempHandles }) => {
   const platforms = [
     { key: 'leetcode', name: 'LeetCode', color: 'text-yellow-400', icon: '/lc.jpg' },
     { key: 'codeforces', name: 'Codeforces', color: 'text-blue-400', icon: '/cf.jpg' },
     { key: 'codechef', name: 'CodeChef', color: 'text-orange-400', icon: '/cc.jpg' }
   ];
+
+  
 
   return (
     <div className="min-h-screen p-6 text-white relative">
@@ -137,60 +138,49 @@ const CodingDashboard = ({ onClose, codingData, isEditing, onEditToggle, onDataC
             <h1 className="text-3xl font-bold text-gray-200">Coding Dashboard</h1>
             <div className="flex items-center gap-4">
               <button 
-                onClick={onEditToggle} 
+                onClick={isEditing ? onSave : onEdit} 
                 className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
               >
                 {isEditing ? <FaCheck /> : <FaEdit />}
-                {isEditing ? 'Save' : 'Edit'}
+                {isEditing ? 'Save' : 'Edit Handles'}
               </button>
               <button onClick={onClose} className="animated-back-btn">
-                <div className="back-sign">
-                  <svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg>
-                </div>
+                <div className="back-sign"><svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg></div>
                 <div className="back-text">Back</div>
               </button>
             </div>
           </div>
           <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
             {platforms.map(p => (
-              <DashboardCard key={p.name} className="p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-gray-700">
-                      {/* This is the new image tag */}
-                      <img src={p.icon} alt={`${p.name} logo`} className="w-8 h-8 object-contain" />
-                    </div>
-                    <h2 className={`text-2xl font-semibold ${p.color}`}>{p.name}</h2>
+              <DashboardCard key={p.name} className="p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-gray-700">
+                    <img src={p.icon} alt={`${p.name} logo`} className="w-8 h-8 object-contain" />
                   </div>
+                  <h2 className={`text-2xl font-semibold ${p.color}`}>{p.name}</h2>
+                </div>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-400">Username</label>
+                    <input 
+                      type="text" 
+                      value={tempHandles[p.key]}
+                      onChange={(e) => setTempHandles(prev => ({...prev, [p.key]: e.target.value}))}
+                      className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                ) : (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between text-lg">
                       <span className="text-gray-400">Problems Solved:</span>
-                      {isEditing ? (
-                        <input 
-                          type="text" 
-                          value={codingData[p.key].solved}
-                          onChange={(e) => onDataChange(p.key, 'solved', e.target.value)}
-                          className="w-24 px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-right"
-                        />
-                      ) : (
-                        <span className="font-bold text-gray-200">{codingData[p.key].solved}</span>
-                      )}
+                      <span className="font-bold text-gray-200">{isLoading ? '...' : codingData?.[p.key].solved}</span>
                     </div>
                     <div className="flex items-center justify-between text-lg">
                       <span className="text-gray-400">Current Rating:</span>
-                      {isEditing ? (
-                         <input 
-                          type="text" 
-                          value={codingData[p.key].rating}
-                          onChange={(e) => onDataChange(p.key, 'rating', e.target.value)}
-                          className="w-24 px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-right"
-                        />
-                      ) : (
-                        <span className="font-bold text-gray-200">{codingData[p.key].rating}</span>
-                      )}
+                      <span className="font-bold text-gray-200">{isLoading ? '...' : codingData?.[p.key].rating}</span>
                     </div>
                   </div>
-                </div>
+                )}
               </DashboardCard>
             ))}
           </div>
@@ -199,17 +189,213 @@ const CodingDashboard = ({ onClose, codingData, isEditing, onEditToggle, onDataC
     </div>
   );
 };
-function App() {
+// --- New, Dedicated Page for Codeforces Stats ---
+// --- New, Dedicated Page for Codeforces Stats ---
+// --- New, Dedicated Page for Codeforces Stats ---
+// --- Final, Corrected Page for Codeforces Stats ---
+// --- Final, Corrected Page for Codeforces Stats ---
+// --- Final, Corrected Page for Codeforces Stats ---
+const CodeforcesProfilePage = ({ onClose }) => {
+  const [handle, setHandle] = useState('');
+  const [stats, setStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleCodingDataChange = (platform, field, value) => {
-    setCodingData(prev => ({
-      ...prev,
-      [platform]: {
-        ...prev[platform],
-        [field]: value
+  const fetchStats = async () => {
+    if (!handle.trim()) {
+      setError('Please enter a Codeforces handle.');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+    setStats(null);
+    try {
+      const response = await fetch(`/api/coding-stats?cf=${handle.trim()}`);
+      const data = await response.json();
+      
+      if (!response.ok || data.error) {
+        throw new Error(data.details || data.error || 'User not found or API error.');
       }
-    }));
+      setStats(data);
+    } catch (err) {
+      console.error("Error during fetch:", err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const StatCard = ({ title, value, color }) => (
+    <div className="bg-gray-800 p-4 rounded-lg text-center flex flex-col justify-center">
+      <p className="text-sm text-gray-400 mb-1">{title}</p>
+      <p className={`text-2xl font-bold ${color || 'text-white'}`}>{value !== undefined ? value : '...'}</p>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen p-6 text-white relative">
+      <AnimatedBackground />
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-200">Codeforces Stats</h1>
+          <button onClick={onClose} className="animated-back-btn">
+            <div className="back-sign"><svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg></div>
+            <div className="back-text">Back</div>
+          </button>
+        </div>
+        
+        <div className="flex gap-2 mb-8">
+          <input 
+            type="text" 
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && fetchStats()}
+            placeholder="Enter Codeforces Handle..." 
+            className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button onClick={fetchStats} disabled={isLoading} className="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-500 transition-colors">
+            {isLoading ? 'Fetching...' : 'Get Stats'}
+          </button>
+        </div>
+
+        {error && <p className="text-center text-red-400 mb-4 bg-red-900 bg-opacity-50 p-3 rounded-lg">{error}</p>}
+
+        {isLoading && (
+          <div className="text-center text-gray-400">Loading...</div>
+        )}
+
+        {stats && (
+          <div className="space-y-6 animate-chat-bubble">
+            <div className="text-center bg-gray-800 p-6 rounded-lg">
+              <h2 className="text-4xl font-bold text-blue-400">{stats.handle}</h2>
+              <p className="text-xl capitalize text-gray-300">{stats.rank}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard title="Rating" value={stats.rating} color="text-green-400" />
+              <StatCard title="Max Rating" value={stats.maxRating} color="text-yellow-400" />
+              <StatCard title="Problems Solved" value={stats.solved} />
+              <StatCard title="Contests" value={stats.contestCount} />
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard title="Best Rank" value={stats.bestRank} />
+              <StatCard title="Worst Rank" value={stats.worstRank} />
+              <StatCard title="Max Rating Gain" value={`+${stats.maxUp}`} color="text-green-400" />
+              <StatCard title="Max Rating Loss" value={stats.maxDown} color="text-red-400" />
+            </div>
+             <StatCard title="Average Attempts per Problem" value={stats.averageAttempts} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+// --- New, Dedicated Page for LeetCode Stats ---
+// --- Final, Corrected Page for LeetCode Stats ---
+const LeetCodeProfilePage = ({ onClose }) => {
+  const [handle, setHandle] = useState('');
+  const [stats, setStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchStats = async () => {
+    if (!handle.trim()) {
+      setError('Please enter a LeetCode handle.');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+    setStats(null);
+    try {
+      const response = await fetch(`/api/coding-stats?lc=${handle.trim()}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        // Use the error message from the API response
+        throw new Error(data.error || 'Failed to fetch stats.');
+      }
+      
+      setStats(data);
+    } catch (err) {
+      console.error("Error during fetch:", err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const StatCard = ({ title, value, color }) => (
+    <div className="bg-gray-800 p-4 rounded-lg text-center flex flex-col justify-center">
+      <p className="text-sm text-gray-400 mb-1">{title}</p>
+      <p className={`text-2xl font-bold ${color || 'text-white'}`}>{value !== undefined ? value : '...'}</p>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen p-6 text-white relative">
+      <AnimatedBackground />
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-200">LeetCode Stats</h1>
+          <button onClick={onClose} className="animated-back-btn">
+            <div className="back-sign"><svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg></div>
+            <div className="back-text">Back</div>
+          </button>
+        </div>
+        
+        <div className="flex gap-2 mb-8">
+          <input 
+            type="text" 
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && fetchStats()}
+            placeholder="Enter LeetCode Handle..." 
+            className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          />
+          <button onClick={fetchStats} disabled={isLoading} className="px-6 py-3 bg-yellow-600 rounded-lg hover:bg-yellow-700 disabled:bg-gray-500 transition-colors">
+            {isLoading ? 'Fetching...' : 'Get Stats'}
+          </button>
+        </div>
+
+        {error && <p className="text-center text-red-400 mb-4 bg-red-900 bg-opacity-50 p-3 rounded-lg">{error}</p>}
+        {isLoading && <div className="text-center text-gray-400">Loading...</div>}
+
+        {stats && (
+          <div className="space-y-6 animate-chat-bubble">
+            <div className="text-center bg-gray-800 p-6 rounded-lg">
+              <h2 className="text-4xl font-bold text-yellow-400">{handle}</h2>
+              <p className="text-xl capitalize text-gray-300">Global Rank: {stats.rank}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard title="Total Problems Solved" value={stats.solved} />
+              <StatCard title="Contest Rating" value={stats.rating} color="text-green-400" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+function App() {
+  const handleEditCodingHandles = () => {
+    // When editing starts, populate the temporary state with current handles
+    setTempCodingHandles(userProfile.codingHandles || { codeforces: '', leetcode: '', codechef: '' });
+    setIsEditingCodingData(true);
+  };
+
+  const handleSaveCodingHandles = () => {
+    // When saving, update the main user profile
+    setUserProfile(prev => ({
+      ...prev,
+      codingHandles: tempCodingHandles
+    }));
+    setIsEditingCodingData(false);
+    // The useEffect for fetching data will automatically run because userProfile.codingHandles will change
+  };
+
+  
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -218,22 +404,64 @@ function App() {
   const [gymData, setGymData] = useState({});
   const [skinCareData, setSkinCareData] = useState({});
   const [groceryList, setGroceryList] = useState([]);
-  // Add new state for coding data with placeholders
+  
+  // State for the Coding Dashboard
+  const [codingData, setCodingData] = useState(null);
+  const [isLoadingCodingData, setIsLoadingCodingData] = useState(false);
   const [isEditingCodingData, setIsEditingCodingData] = useState(false);
-  const [codingData, setCodingData] = useState({
-    leetcode: { solved: '500+', rating: '1850' },
-    codeforces: { solved: '800+', rating: '1600' },
-    codechef: { solved: '600+', rating: '1900' },
-  });
+  const [tempCodingHandles, setTempCodingHandles] = useState({ codeforces: '', leetcode: '', codechef: '' });
+
+  // State for other components
   const [editingSubject, setEditingSubject] = useState(null);
   const [newGroceryItem, setNewGroceryItem] = useState('');
-  // Add 'coding' to the views state
   const [views, setViews] = useState({
     attendance: false, schedule: false, skinCare: false, gym: false,
-    style: false, grocery: false, chat: false, coding: false 
+    style: false, grocery: false, chat: false, coding: false, codeforcesProfile: false
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isAnimating, setIsAnimating] = useState(false);
+  // Inside the App function
+
+// This useEffect fetches coding data whenever the user's handles change in their profile
+useEffect(() => {
+  const fetchCodingData = async () => {
+    // Don't fetch if the handles are not set
+    if (!userProfile?.codingHandles?.codeforces) {
+      setCodingData({
+        leetcode: { solved: 'Not Set', rating: 'N/A' },
+        codeforces: { solved: 'Not Set', rating: 'N/A' },
+        codechef: { solved: 'Not Set', rating: 'N/A' },
+      });
+      return;
+    }
+    
+    setIsLoadingCodingData(true);
+    try {
+      const cfHandle = userProfile.codingHandles.codeforces || '';
+      // In the future, you'll add lcHandle and ccHandle here
+      
+      const response = await fetch(`/api/coding-stats?cf=${cfHandle}`);
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch coding stats');
+      
+      setCodingData(data);
+    } catch (error) {
+      console.error("Error fetching coding stats:", error);
+      setCodingData({
+        leetcode: { solved: 'Error', rating: 'N/A' },
+        codeforces: { solved: 'Error', rating: 'N/A' },
+        codechef: { solved: 'Error', rating: 'N/A' },
+      });
+    } finally {
+      setIsLoadingCodingData(false);
+    }
+  };
+
+  if (user && userProfile) {
+    fetchCodingData();
+  }
+},  [user, userProfile]); // Re-run when handles change // The dependency array ensures this runs when the user logs in
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -282,7 +510,12 @@ function App() {
           gymData,
           skinCareData,
           groceryList,
-          codingData // <-- 1. Add this line
+          codingData ,// <-- 1. Add this line
+          codingHandles: {
+            leetcode: '',
+            codeforces: '',
+            codechef: ''
+          }
         }, { merge: true });
       };
       saveData();
@@ -360,7 +593,7 @@ function App() {
   const getCurrentDay = useCallback(() => new Date().toLocaleDateString('en-US', { weekday: 'long' }), []);
   
   const updateView = useCallback((viewName, value) => {
-    const newViews = { attendance: false, schedule: false, skinCare: false, gym: false, style: false, grocery: false, chat: false, coding: false };
+    const newViews = { attendance: false, schedule: false, skinCare: false, gym: false, style: false, grocery: false, chat: false, coding: false, codeforcesProfile: false, leetcodeProfile: false };
     newViews[viewName] = value;
     setViews(newViews);
   }, []);
@@ -429,10 +662,16 @@ if (isLoading) {
   if (views.coding) return <CodingDashboard 
   onClose={() => updateView('coding', false)} 
   codingData={codingData}
+  isLoading={isLoadingCodingData}
   isEditing={isEditingCodingData}
-  onEditToggle={() => setIsEditingCodingData(prev => !prev)}
-  onDataChange={handleCodingDataChange}
+  onEdit={handleEditCodingHandles}
+  onSave={handleSaveCodingHandles}
+  // Add these two missing props:
+  tempHandles={tempCodingHandles}
+  setTempHandles={setTempCodingHandles}
 />;
+if (views.codeforcesProfile) return <CodeforcesProfilePage onClose={() => updateView('codeforcesProfile', false)} />;
+if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView('leetcodeProfile', false)} />;
 
   if (views.attendance) {
     const warningSubjects = Object.keys(attendanceData).filter(subject => getAttendancePercentage(subject) < 75);
@@ -967,24 +1206,41 @@ if (isLoading) {
         </section>
 
        {/* Coding Section */}
-       <section>
+      {/* Coding Section */}
+      <section>
           <SectionHeader 
             title="Coding" 
             icon={<FaCode className="text-2xl text-green-400" />} 
             titleColor="text-green-400"
           />
-          <div className="grid md:grid-cols-3 gap-6">
-             <DashboardCard className="p-8 md:col-span-3" onClick={() => updateView('coding', true)}>
+          {/* This div creates the two-column grid layout */}
+          <div className="grid md:grid-cols-2 gap-6">
+            
+             {/* Codeforces Card */}
+             <DashboardCard className="p-8" onClick={() => updateView('codeforcesProfile', true)}>
                <div className="flex items-center gap-4">
-                 <FaTrophy className="text-4xl text-yellow-400" />
+                 <img src="/cf.jpg" alt="Codeforces Logo" className="w-10 h-10 object-contain rounded-md" />
                  <div>
-                   <h3 className="font-semibold text-gray-200">Coding Dashboard</h3>
-                   <p className="text-sm text-gray-400">View your competitive programming stats</p>
+                   <h3 className="font-semibold text-gray-200">Codeforces Stats</h3>
+                   <p className="text-sm text-gray-400">View detailed performance</p>
                  </div>
                </div>
              </DashboardCard>
+
+             {/* LeetCode Card */}
+             <DashboardCard className="p-8" onClick={() => updateView('leetcodeProfile', true)}>
+               <div className="flex items-center gap-4">
+                 <img src="/lc.jpg" alt="LeetCode Logo" className="w-10 h-10 object-contain rounded-md" />
+                 <div>
+                   <h3 className="font-semibold text-gray-200">LeetCode Stats</h3>
+                   <p className="text-sm text-gray-400">View detailed performance</p>
+                 </div>
+               </div>
+             </DashboardCard>
+
           </div>
         </section>
+       
 
         <div className="space-y-6">
           <Card className="p-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white">

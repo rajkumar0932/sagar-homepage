@@ -261,6 +261,7 @@ function App() {
         setGymData(data.gymData || { streak: 0, calendar: {} });
         setSkinCareData(data.skinCareData || { streak: 0, calendar: {} });
         setGroceryList(data.groceryList || []);
+        setCodingData(data.codingData || { leetcode: { solved: '0', rating: '0' }, codeforces: { solved: '0', rating: '0' }, codechef: { solved: '0', rating: '0' } });
       } else {
         console.log("User document not found for this user. This might happen right after sign-up before the doc is created.");
         setUserProfile({ firstName: user.email.split('@')[0] });
@@ -280,14 +281,15 @@ function App() {
           attendanceData,
           gymData,
           skinCareData,
-          groceryList
-        }, { merge: true }); // Use merge to prevent overwriting firstName on initial save
+          groceryList,
+          codingData // <-- 1. Add this line
+        }, { merge: true });
       };
       saveData();
     }, 1500);
 
     return () => clearTimeout(handler);
-  }, [attendanceData, gymData, skinCareData, groceryList, userProfile, user, isLoading]);
+  }, [attendanceData, gymData, skinCareData, groceryList, userProfile, user, isLoading, codingData]); // <-- 2. And add codingData here [attendanceData, gymData, skinCareData, groceryList, userProfile, user, isLoading]);
 
   const staticData = useMemo(() => ({
     schedule: [

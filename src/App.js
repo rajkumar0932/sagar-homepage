@@ -6,11 +6,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
 import { 
-  FaCalendarAlt, FaCheckCircle, FaClipboardList, FaDumbbell, FaAppleAlt, FaSpa,
+  FaCalendarAlt, FaCheckCircle, FaClipboardList, FaDumbbell, FaAppleAlt, 
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart, 
-  FaChevronLeft, FaChevronRight, FaPlus,  FaCheck, FaTimes, FaEdit
+  FaChevronLeft, FaChevronRight, FaPlus,  FaCheck, FaTimes, FaEdit,
+  FaCode, FaTrophy // Add these new icons
 } from 'react-icons/fa';
-
 // Reusable Card Component
 const Card = ({ children, className = "", onClick }) => (
   <div 
@@ -113,8 +113,96 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
     </div>
   );
 };
+// New Component for the Coding Dashboard
+// New Component for the Coding Dashboard
+const CodingDashboard = ({ onClose, codingData, isEditing, onEditToggle, onDataChange }) => {
+  const platforms = [
+    { key: 'leetcode', name: 'LeetCode', color: 'text-yellow-400', icon: 'LC' },
+    { key: 'codeforces', name: 'Codeforces', color: 'text-blue-400', icon: 'CF' },
+    { key: 'codechef', name: 'CodeChef', color: 'text-orange-400', icon: 'CC' }
+  ];
 
+  return (
+    <div className="min-h-screen p-6 text-white relative">
+      <AnimatedBackground />
+      <div className="relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-200">Coding Dashboard</h1>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={onEditToggle} 
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+              >
+                {isEditing ? <FaCheck /> : <FaEdit />}
+                {isEditing ? 'Save' : 'Edit'}
+              </button>
+              <button onClick={onClose} className="animated-back-btn">
+                <div className="back-sign">
+                  <svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg>
+                </div>
+                <div className="back-text">Back</div>
+              </button>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
+            {platforms.map(p => (
+              <DashboardCard key={p.name} className="p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className={`w-12 h-12 flex items-center justify-center rounded-lg bg-gray-700 font-bold text-xl ${p.color}`}>
+                      {p.icon}
+                    </div>
+                    <h2 className={`text-2xl font-semibold ${p.color}`}>{p.name}</h2>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between text-lg">
+                      <span className="text-gray-400">Problems Solved:</span>
+                      {isEditing ? (
+                        <input 
+                          type="text" 
+                          value={codingData[p.key].solved}
+                          onChange={(e) => onDataChange(p.key, 'solved', e.target.value)}
+                          className="w-24 px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-right"
+                        />
+                      ) : (
+                        <span className="font-bold text-gray-200">{codingData[p.key].solved}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-lg">
+                      <span className="text-gray-400">Current Rating:</span>
+                      {isEditing ? (
+                         <input 
+                          type="text" 
+                          value={codingData[p.key].rating}
+                          onChange={(e) => onDataChange(p.key, 'rating', e.target.value)}
+                          className="w-24 px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-right"
+                        />
+                      ) : (
+                        <span className="font-bold text-gray-200">{codingData[p.key].rating}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </DashboardCard>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 function App() {
+
+  const handleCodingDataChange = (platform, field, value) => {
+    setCodingData(prev => ({
+      ...prev,
+      [platform]: {
+        ...prev[platform],
+        [field]: value
+      }
+    }));
+  };
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,12 +211,19 @@ function App() {
   const [gymData, setGymData] = useState({});
   const [skinCareData, setSkinCareData] = useState({});
   const [groceryList, setGroceryList] = useState([]);
-  
+  // Add new state for coding data with placeholders
+  const [isEditingCodingData, setIsEditingCodingData] = useState(false);
+  const [codingData, setCodingData] = useState({
+    leetcode: { solved: '500+', rating: '1850' },
+    codeforces: { solved: '800+', rating: '1600' },
+    codechef: { solved: '600+', rating: '1900' },
+  });
   const [editingSubject, setEditingSubject] = useState(null);
   const [newGroceryItem, setNewGroceryItem] = useState('');
+  // Add 'coding' to the views state
   const [views, setViews] = useState({
     attendance: false, schedule: false, skinCare: false, gym: false,
-    style: false, grocery: false, chat: false 
+    style: false, grocery: false, chat: false, coding: false 
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isAnimating, setIsAnimating] = useState(false);
@@ -256,11 +351,10 @@ function App() {
   const getCurrentDay = useCallback(() => new Date().toLocaleDateString('en-US', { weekday: 'long' }), []);
   
   const updateView = useCallback((viewName, value) => {
-    const newViews = { attendance: false, schedule: false, skinCare: false, gym: false, style: false, grocery: false, chat: false };
+    const newViews = { attendance: false, schedule: false, skinCare: false, gym: false, style: false, grocery: false, chat: false, coding: false };
     newViews[viewName] = value;
     setViews(newViews);
   }, []);
-
   const handleImageClick = () => setIsAnimating(is => !is);
 
   const markAttendance = useCallback((subject, present) => {
@@ -323,6 +417,13 @@ if (isLoading) {
   // --- Conditional Rendering for Views ---
   
   if (views.chat) return <Chat onClose={() => updateView('chat', false)} />;
+  if (views.coding) return <CodingDashboard 
+  onClose={() => updateView('coding', false)} 
+  codingData={codingData}
+  isEditing={isEditingCodingData}
+  onEditToggle={() => setIsEditingCodingData(prev => !prev)}
+  onDataChange={handleCodingDataChange}
+/>;
 
   if (views.attendance) {
     const warningSubjects = Object.keys(attendanceData).filter(subject => getAttendancePercentage(subject) < 75);
@@ -856,29 +957,20 @@ if (isLoading) {
           </div>
         </section>
 
-        {/* Style & Skin Section */}
-        <section>
+       {/* Coding Section */}
+       <section>
           <SectionHeader 
-            title="Style & Skin" 
-            icon={<FaSpa className="text-2xl text-pink-400" />} 
-            titleColor="text-pink-400"
+            title="Coding" 
+            icon={<FaCode className="text-2xl text-green-400" />} 
+            titleColor="text-green-400"
           />
-          <div className="grid md:grid-cols-2 gap-6">
-             <DashboardCard className="p-8" onClick={() => updateView('skinCare', true)}>
+          <div className="grid md:grid-cols-3 gap-6">
+             <DashboardCard className="p-8 md:col-span-3" onClick={() => updateView('coding', true)}>
                <div className="flex items-center gap-4">
-                 <FaSpa className="text-4xl text-pink-400" />
+                 <FaTrophy className="text-4xl text-yellow-400" />
                  <div>
-                   <h3 className="font-semibold text-gray-200">Skincare</h3>
-                   <p className="text-sm text-gray-400">Track your routine</p>
-                 </div>
-               </div>
-             </DashboardCard>
-             <DashboardCard className="p-8" onClick={() => updateView('style', true)}>
-               <div className="flex items-center gap-4">
-                 <FaTshirt className="text-4xl text-indigo-400" />
-                 <div>
-                   <h3 className="font-semibold text-gray-200">Style Guide</h3>
-                   <p className="text-sm text-gray-400">Fashion tips</p>
+                   <h3 className="font-semibold text-gray-200">Coding Dashboard</h3>
+                   <p className="text-sm text-gray-400">View your competitive programming stats</p>
                  </div>
                </div>
              </DashboardCard>

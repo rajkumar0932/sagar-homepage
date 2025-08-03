@@ -1,16 +1,14 @@
 // src/LoginPage.js
-
 import React, { useState } from 'react';
 import { auth, db } from './firebase';
 import { doc, setDoc } from "firebase/firestore"; 
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword 
-} from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import './LoginPage.css';
+import ForgotPassword from './ForgotPassword'; // Import the new component
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false); // New state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,35 +27,28 @@ const LoginPage = () => {
         setError("Invalid email or password. Please try again.");
       }
     } else {
-      // Handle Sign Up
       if (password !== confirmPassword) {
         setError("Passwords do not match.");
         return;
       }
-      // Replace it with this block
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        // Create the new user's document with ALL default data
         await setDoc(doc(db, "userData", user.uid), {
           firstName: firstName,
           lastName: lastName,
           email: user.email,
           attendanceData: {
-            'EIM(SB)': { attended: 0, total: 0 },
-            'DSP(SRC)': { attended: 0, total: 0 },
-            'ADC(TM)': { attended: 0, total: 0 },
-            'IM(ABC)': { attended: 0, total: 0 },
-            'MPMC': { attended: 0, total: 0 },
-            'LAB': { attended: 0, total: 0 }
+            'EIM(SB)': { attended: 0, total: 0 }, 'DSP(SRC)': { attended: 0, total: 0 },
+            'ADC(TM)': { attended: 0, total: 0 }, 'IM(ABC)': { attended: 0, total: 0 },
+            'MPMC': { attended: 0, total: 0 }, 'LAB': { attended: 0, total: 0 }
           },
           gymData: { streak: 0, calendar: {} },
           skinCareData: { streak: 0, calendar: {} },
           groceryList: []
         });
-
-      } catch (err) { //...
+      } catch (err) {
         if (err.code === 'auth/email-already-in-use') {
           setError('This email is already registered.');
         } else {
@@ -73,6 +64,10 @@ const LoginPage = () => {
     setError('');
   };
 
+  if (showForgotPassword) {
+    return <ForgotPassword onBackToLogin={() => setShowForgotPassword(false)} />;
+  }
+
   return (
     <div className="login-page-background">
       {isLogin ? (
@@ -87,11 +82,17 @@ const LoginPage = () => {
             <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <span>Password</span>
           </label>
+          <div className="forgot-password">
+            <button type="button" className="link-button" onClick={() => setShowForgotPassword(true)}>
+              Forgot Password?
+            </button>
+          </div>
           <button type="submit" className="new-submit">Submit</button>
           <p className="new-signin">Don't have an account? <button type="button" className="link-button" onClick={toggleForm}>Sign up</button></p>
           {error && <p style={{color: '#ef4444', textAlign: 'center', marginTop: '10px'}}>{error}</p>}
         </form>
       ) : (
+        // Register Form
         <form className="new-form" onSubmit={handleAuthAction}>
           <p className="new-title">Register</p>
           <p className="new-message">Signup now and get full access to our app.</p>

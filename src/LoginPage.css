@@ -134,3 +134,24 @@
     align-items: center;
     justify-content: center;
   }
+  .link-button {
+    background: none;
+    border: none;
+    color: #00bfff;
+    text-decoration: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 14.5px;
+    margin-left: 6px;
+  }
+  
+  .link-button:hover {
+    text-decoration: underline;
+  }
+  
+  .forgot-password {
+    display: flex;
+    justify-content: flex-end;
+    font-size: 14px;
+    margin: 8px 0 14px 0;
+  }

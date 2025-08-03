@@ -1,7 +1,7 @@
 // src/AnimatedBackground.js
 import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import NET from 'vanta/dist/vanta.net.min';
+import FOG from 'vanta/dist/vanta.fog.min'; // Import FOG instead of NET
 
 const AnimatedBackground = () => {
   const vantaRef = useRef(null);
@@ -9,27 +9,23 @@ const AnimatedBackground = () => {
 
   useEffect(() => {
     if (!vantaEffect) {
-      setVantaEffect(NET({
+      setVantaEffect(FOG({
         el: vantaRef.current,
-        THREE: THREE,
+        THREE: THREE, // Pass THREE.js to Vanta
         mouseControls: true,
         touchControls: true,
         gyroControls: false,
         minHeight: 200.00,
         minWidth: 200.00,
-        scale: 1.00,
-        scaleMobile: 1.00,
-        color: 0x9333ea, // Purple color for points
-        backgroundColor: 0x111827, // Dark background
-        points: 10.00,
-        maxDistance: 22.00,
-        spacing: 18.00,
-        showDots: true, // Make sure dots are visible
-        lineColor: 0x9333ea, // Explicit line color
-        lineOpacity: 0// Make lines more subtle
+        highlightColor: 0x9333ea, // Purple
+        midtoneColor: 0x6b21a8,   // Deeper Purple
+        lowlightColor: 0x4f46e5,  // Indigo
+        baseColor: 0x111827,      // Dark Gray/Black
+        blurFactor: 0.50,
+        speed: 1.20,
+        zoom: 0.80
       }));
     }
-
     return () => {
       if (vantaEffect) vantaEffect.destroy();
     };

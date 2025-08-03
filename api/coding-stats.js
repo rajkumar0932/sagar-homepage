@@ -1,24 +1,50 @@
 // File: /api/coding-stats.js
 
-// Helper function to fetch LeetCode stats
+// --- NEW Helper function to fetch LeetCode stats ---
 async function getLeetCodeStats(handle) {
-    if (!handle) return { solved: 'N/A', rating: 'N/A', rank: 'N/A' };
+    if (!handle) return { error: 'LeetCode handle is missing.' };
     try {
-      const res = await fetch(`https://leetcode-stats-api.herokuapp.com/${handle}`);
+      // We are now using a more detailed, unofficial GraphQL-based API
+      const res = await fetch(`https://leetcode.com/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://leetcode.com'
+        },
+        body: JSON.stringify({
+          query: `
+            query getUserProfile($username: String!) {
+              allQuestionsCount { difficulty count }
+              matchedUser(username: $username) {
+                submitStats: submitStatsGlobal {
+                  acSubmissionNum { difficulty count }
+                }
+              }
+            }
+          `,
+          variables: {
+            username: handle
+          }
+        }),
+      });
+  
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: 'LeetCode user not found' }));
-        throw new Error(errorData.message);
+        throw new Error(`LeetCode API responded with status: ${res.status}`);
       }
-  
+      
       const data = await res.json();
-      if (data.status === 'error') {
-         throw new Error(data.message);
+      
+      if (data.errors) {
+         throw new Error(data.errors[0].message);
       }
   
+      const stats = data.data.matchedUser.submitStats.acSubmissionNum;
+      
       return {
-        solved: data.totalSolved,
-        rating: Math.round(data.contestRating) || 'N/A',
-        rank: data.ranking > 0 ? data.ranking.toLocaleString() : 'N/A',
+        solved: stats.find(s => s.difficulty === 'All').count,
+        easySolved: stats.find(s => s.difficulty === 'Easy').count,
+        mediumSolved: stats.find(s => s.difficulty === 'Medium').count,
+        hardSolved: stats.find(s => s.difficulty === 'Hard').count,
       };
     } catch (error) {
       console.error(`LeetCode fetch error for handle "${handle}":`, error);
@@ -26,9 +52,59 @@ async function getLeetCodeStats(handle) {
     }
   }
   
-  // Helper function to fetch Codeforces stats
+  // --- Helper function to fetch Codeforces stats ---
   async function getCodeforcesStats(handle) {
-    // ... (This function is for the other page, no changes needed here)
+      if (!handle) return { error: 'Codeforces handle is missing.' };
+      try {
+          const [userInfoRes, userStatusRes, userRatingRes] = await Promise.all([
+              fetch(`https://codeforces.com/api/user.info?handles=${handle}`),
+              fetch(`https://codeforces.com/api/user.status?handle=${handle}`),
+              fetch(`https://codeforces.com/api/user.rating?handle=${handle}`)
+          ]);
+  
+          if (!userInfoRes.ok) throw new Error('User not found');
+          
+          const userInfoData = await userInfoRes.json();
+          if (userInfoData.status !== 'OK') throw new Error(userInfoData.comment);
+  
+          const userStatusData = await userStatusRes.json();
+          const userRatingData = await userRatingRes.json();
+  
+          const userInfo = userInfoData.result[0];
+          const solvedProblems = new Set();
+          if (userStatusData.result) {
+              userStatusData.result.forEach(sub => {
+                  if (sub.verdict === 'OK') solvedProblems.add(`${sub.problem.contestId}-${sub.problem.index}`);
+              });
+          }
+          
+          const contests = userRatingData.result || [];
+          const contestCount = contests.length;
+          let bestRank = contestCount > 0 ? Math.min(...contests.map(c => c.rank)) : 'N/A';
+          let worstRank = contestCount > 0 ? Math.max(...contests.map(c => c.rank)) : 'N/A';
+          let maxUp = 0, maxDown = 0;
+          contests.forEach(c => {
+              const change = c.newRating - c.oldRating;
+              if (change > maxUp) maxUp = change;
+              if (change < maxDown) maxDown = change;
+          });
+  
+          return {
+              handle: userInfo.handle,
+              rating: userInfo.rating || 'Unrated',
+              rank: userInfo.rank || 'Unranked',
+              maxRating: userInfo.maxRating || 'N/A',
+              solved: solvedProblems.size,
+              contestCount,
+              bestRank,
+              worstRank,
+              maxUp,
+              maxDown,
+          };
+      } catch (error) {
+          console.error(`Codeforces fetch error for handle "${handle}":`, error);
+          return { error: error.message };
+      }
   }
   
   
@@ -41,16 +117,15 @@ async function getLeetCodeStats(handle) {
       if (lc) {
           responseData = await getLeetCodeStats(lc);
       } else if (cf) {
-          // Note: This logic is for the Codeforces page
-          responseData = await getCodeforcesStats(cf); 
+          responseData = await getCodeforcesStats(cf);
       } else {
           return res.status(400).json({ error: 'A platform handle (lc or cf) is required.' });
       }
-  
+      
       if (responseData.error) {
-        return res.status(404).json({ error: responseData.error });
+          return res.status(404).json({ error: responseData.error });
       }
-  
+      
       res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
       return res.status(200).json(responseData);
   

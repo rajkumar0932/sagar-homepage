@@ -293,6 +293,8 @@ const CodeforcesProfilePage = ({ onClose }) => {
 };
 // --- New, Dedicated Page for LeetCode Stats ---
 // --- Final, Corrected Page for LeetCode Stats ---
+// --- Final, Corrected Page for LeetCode Stats ---
+// --- Updated Page for LeetCode Stats with Problem Breakdown ---
 const LeetCodeProfilePage = ({ onClose }) => {
   const [handle, setHandle] = useState('');
   const [stats, setStats] = useState(null);
@@ -311,11 +313,9 @@ const LeetCodeProfilePage = ({ onClose }) => {
       const response = await fetch(`/api/coding-stats?lc=${handle.trim()}`);
       const data = await response.json();
       
-      if (!response.ok) {
-        // Use the error message from the API response
-        throw new Error(data.error || 'Failed to fetch stats.');
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'User not found or API error.');
       }
-      
       setStats(data);
     } catch (err) {
       console.error("Error during fetch:", err);
@@ -326,9 +326,9 @@ const LeetCodeProfilePage = ({ onClose }) => {
   };
 
   const StatCard = ({ title, value, color }) => (
-    <div className="bg-gray-800 p-4 rounded-lg text-center flex flex-col justify-center">
-      <p className="text-sm text-gray-400 mb-1">{title}</p>
-      <p className={`text-2xl font-bold ${color || 'text-white'}`}>{value !== undefined ? value : '...'}</p>
+    <div className="bg-gray-800 p-6 rounded-lg text-center flex flex-col justify-center">
+      <p className="text-md text-gray-400 mb-1">{title}</p>
+      <p className={`text-3xl font-bold ${color || 'text-white'}`}>{value !== undefined ? value : '...'}</p>
     </div>
   );
 
@@ -365,12 +365,13 @@ const LeetCodeProfilePage = ({ onClose }) => {
           <div className="space-y-6 animate-chat-bubble">
             <div className="text-center bg-gray-800 p-6 rounded-lg">
               <h2 className="text-4xl font-bold text-yellow-400">{handle}</h2>
-              <p className="text-xl capitalize text-gray-300">Global Rank: {stats.rank}</p>
+              <p className="text-xl capitalize text-gray-300">Total Solved: {stats.solved}</p>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <StatCard title="Total Problems Solved" value={stats.solved} />
-              <StatCard title="Contest Rating" value={stats.rating} color="text-green-400" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatCard title="Easy" value={stats.easySolved} color="text-green-400" />
+              <StatCard title="Medium" value={stats.mediumSolved} color="text-yellow-400" />
+              <StatCard title="Hard" value={stats.hardSolved} color="text-red-400" />
             </div>
           </div>
         )}

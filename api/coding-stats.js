@@ -52,60 +52,76 @@ async function getLeetCodeStats(handle) {
     }
   }
   
-  // --- Helper function to fetch Codeforces stats ---
-  async function getCodeforcesStats(handle) {
-      if (!handle) return { error: 'Codeforces handle is missing.' };
-      try {
-          const [userInfoRes, userStatusRes, userRatingRes] = await Promise.all([
-              fetch(`https://codeforces.com/api/user.info?handles=${handle}`),
-              fetch(`https://codeforces.com/api/user.status?handle=${handle}`),
-              fetch(`https://codeforces.com/api/user.rating?handle=${handle}`)
-          ]);
-  
-          if (!userInfoRes.ok) throw new Error('User not found');
-          
-          const userInfoData = await userInfoRes.json();
-          if (userInfoData.status !== 'OK') throw new Error(userInfoData.comment);
-  
-          const userStatusData = await userStatusRes.json();
-          const userRatingData = await userRatingRes.json();
-  
-          const userInfo = userInfoData.result[0];
-          const solvedProblems = new Set();
-          if (userStatusData.result) {
-              userStatusData.result.forEach(sub => {
-                  if (sub.verdict === 'OK') solvedProblems.add(`${sub.problem.contestId}-${sub.problem.index}`);
-              });
-          }
-          
-          const contests = userRatingData.result || [];
-          const contestCount = contests.length;
-          let bestRank = contestCount > 0 ? Math.min(...contests.map(c => c.rank)) : 'N/A';
-          let worstRank = contestCount > 0 ? Math.max(...contests.map(c => c.rank)) : 'N/A';
-          let maxUp = 0, maxDown = 0;
-          contests.forEach(c => {
-              const change = c.newRating - c.oldRating;
-              if (change > maxUp) maxUp = change;
-              if (change < maxDown) maxDown = change;
-          });
-  
-          return {
-              handle: userInfo.handle,
-              rating: userInfo.rating || 'Unrated',
-              rank: userInfo.rank || 'Unranked',
-              maxRating: userInfo.maxRating || 'N/A',
-              solved: solvedProblems.size,
-              contestCount,
-              bestRank,
-              worstRank,
-              maxUp,
-              maxDown,
-          };
-      } catch (error) {
-          console.error(`Codeforces fetch error for handle "${handle}":`, error);
-          return { error: error.message };
-      }
-  }
+// --- Helper function to fetch Codeforces stats ---
+async function getCodeforcesStats(handle) {
+    if (!handle) return { error: 'Codeforces handle is missing.' };
+    try {
+        const [userInfoRes, userStatusRes, userRatingRes] = await Promise.all([
+            fetch(`https://codeforces.com/api/user.info?handles=${handle}`),
+            fetch(`https://codeforces.com/api/user.status?handle=${handle}`),
+            fetch(`https://codeforces.com/api/user.rating?handle=${handle}`)
+        ]);
+
+        if (!userInfoRes.ok) throw new Error('User not found');
+        
+        const userInfoData = await userInfoRes.json();
+        if (userInfoData.status !== 'OK') throw new Error(userInfoData.comment);
+
+        const userStatusData = await userStatusRes.json();
+        const userRatingData = await userRatingRes.json();
+
+        const userInfo = userInfoData.result[0];
+        const submissions = userStatusData.result || [];
+        const solvedProblems = new Set();
+        
+        submissions.forEach(sub => {
+            if (sub.verdict === 'OK') {
+                solvedProblems.add(`${sub.problem.contestId}-${sub.problem.index}`);
+            }
+        });
+        
+        const solvedCount = solvedProblems.size;
+        let averageAttempts = 'N/A';
+
+        if (solvedCount > 0) {
+            const totalAttemptsForSolvedProblems = submissions.filter(sub => 
+                solvedProblems.has(`${sub.problem.contestId}-${sub.problem.index}`)
+            ).length;
+            
+            if (totalAttemptsForSolvedProblems > 0) {
+                averageAttempts = (totalAttemptsForSolvedProblems / solvedCount).toFixed(2);
+            }
+        }
+        
+        const contests = userRatingData.result || [];
+        const contestCount = contests.length;
+        let bestRank = contestCount > 0 ? Math.min(...contests.map(c => c.rank)) : 'N/A';
+        let worstRank = contestCount > 0 ? Math.max(...contests.map(c => c.rank)) : 'N/A';
+        let maxUp = 0, maxDown = 0;
+        contests.forEach(c => {
+            const change = c.newRating - c.oldRating;
+            if (change > maxUp) maxUp = change;
+            if (change < maxDown) maxDown = change;
+        });
+
+        return {
+            handle: userInfo.handle,
+            rating: userInfo.rating || 'Unrated',
+            rank: userInfo.rank || 'Unranked',
+            maxRating: userInfo.maxRating || 'N/A',
+            solved: solvedCount,
+            contestCount,
+            bestRank,
+            worstRank,
+            maxUp,
+            maxDown,
+            averageAttempts,
+        };
+    } catch (error) {
+        console.error(`Codeforces fetch error for handle "${handle}":`, error);
+        return { error: error.message };
+    }
+}
   
   
   export default async function handler(req, res) {

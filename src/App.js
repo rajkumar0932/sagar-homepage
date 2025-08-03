@@ -114,12 +114,18 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
   );
 };
 // New Component for the Coding Dashboard
+
 // New Component for the Coding Dashboard
+// --- SVG Icon Components for Coding Platforms ---
+
+
+// Updated Component for the Coding Dashboard
 const CodingDashboard = ({ onClose, codingData, isEditing, onEditToggle, onDataChange }) => {
+  // This array now points to your images in the /public folder
   const platforms = [
-    { key: 'leetcode', name: 'LeetCode', color: 'text-yellow-400', icon: 'LC' },
-    { key: 'codeforces', name: 'Codeforces', color: 'text-blue-400', icon: 'CF' },
-    { key: 'codechef', name: 'CodeChef', color: 'text-orange-400', icon: 'CC' }
+    { key: 'leetcode', name: 'LeetCode', color: 'text-yellow-400', icon: '/lc.jpg' },
+    { key: 'codeforces', name: 'Codeforces', color: 'text-blue-400', icon: '/cf.jpg' },
+    { key: 'codechef', name: 'CodeChef', color: 'text-orange-400', icon: '/cc.jpg' }
   ];
 
   return (
@@ -150,8 +156,9 @@ const CodingDashboard = ({ onClose, codingData, isEditing, onEditToggle, onDataC
               <DashboardCard key={p.name} className="p-6 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-4 mb-6">
-                    <div className={`w-12 h-12 flex items-center justify-center rounded-lg bg-gray-700 font-bold text-xl ${p.color}`}>
-                      {p.icon}
+                    <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-gray-700">
+                      {/* This is the new image tag */}
+                      <img src={p.icon} alt={`${p.name} logo`} className="w-8 h-8 object-contain" />
                     </div>
                     <h2 className={`text-2xl font-semibold ${p.color}`}>{p.name}</h2>
                   </div>

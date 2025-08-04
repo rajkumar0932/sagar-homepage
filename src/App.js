@@ -63,8 +63,15 @@ const FeedbackModal = ({ userEmail, onClose }) => {
         })
       });
 
+      // Add specific check for 404 error
+      if (response.status === 404) {
+        console.error("Frontend Error: The API endpoint '/api/send-feedback' was not found. Make sure the file 'api/send-feedback.js' exists and the server is running correctly.");
+        throw new Error('API endpoint not found. Check server logs.');
+      }
+
       const data = await response.json();
       if (!response.ok) {
+        console.error("API Error Response:", data);
         throw new Error(data.error || 'Failed to send feedback.');
       }
       
@@ -74,6 +81,7 @@ const FeedbackModal = ({ userEmail, onClose }) => {
       }, 2000);
 
     } catch (error) {
+      console.error("Full error in handleSubmit:", error);
       setStatus({ state: 'error', text: error.message });
     }
   };
@@ -107,8 +115,8 @@ const FeedbackModal = ({ userEmail, onClose }) => {
                   {status.text}
                 </p>
               )}
-              <button
-                type="submit"
+              <button 
+                type="submit" 
                 disabled={status.state === 'sending'}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center gap-2 disabled:bg-gray-500"
               >
@@ -122,6 +130,7 @@ const FeedbackModal = ({ userEmail, onClose }) => {
     </div>
   );
 };
+
 
 
 // --- New Assignments Page Component ---

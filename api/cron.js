@@ -1,30 +1,18 @@
 // File: /api/cron.js
-// This is a serverless function that you can set up as a cron job.
-// On Vercel, you can add a "crons" section to your vercel.json file.
-// Example vercel.json:
-// {
-//   "crons": [
-//     {
-//       "path": "/api/cron",
-//       "schedule": "*/15 * * * *"
-//     }
-//   ]
-// }
-// This will run the function every 15 minutes.
+// This function runs every 15 minutes to check for upcoming assignments and labs.
 
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-// --- IMPORTANT: Firebase Admin SDK Setup ---
+// --- Firebase Admin SDK Setup ---
 let serviceAccount;
 try {
   serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 } catch (e) {
-  console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it is set correctly in your environment variables.');
+  console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY.');
   serviceAccount = null;
 }
 
-// Initialize Firebase Admin only once
 if (serviceAccount && !getApps().length) {
   initializeApp({
     credential: cert(serviceAccount)
@@ -35,7 +23,6 @@ const db = getFirestore();
 
 // --- Main Cron Job Handler ---
 export default async function handler(req, res) {
-  // Secure the endpoint
   if (req.headers['x-vercel-cron-secret'] !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -64,17 +51,17 @@ export default async function handler(req, res) {
         continue; // Skip user if no email is set
       }
 
-      // --- 1. Check for Assignment Notifications ---
+      // --- 1. Check for Assignment Notifications (12-hour window) ---
       const assignments = userData.assignments || [];
       let userAssignmentsModified = false;
+      const twelveHoursFromNow = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+
       const updatedAssignments = assignments.map(assignment => {
         const deadline = new Date(assignment.deadline);
-        const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-        if (deadline > now && deadline <= twentyFourHoursFromNow && !assignment.notificationSent) {
-          const message = `Reminder: Your assignment "${assignment.title}" for subject "${assignment.subject || 'General'}" is due in less than 24 hours.`;
+        if (deadline > now && deadline <= twelveHoursFromNow && !assignment.notificationSent) {
+          const message = `Reminder: Your assignment "${assignment.title}" for subject "${assignment.subject || 'General'}" is due in less than 12 hours.`;
           notificationsToSend.push(
-            fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/send-notification`, {
+            fetch(`${process.env.VERCEL_URL}/api/send-notification`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-internal-secret': process.env.INTERNAL_SECRET },
               body: JSON.stringify({ email: settings.email, subject: `Assignment Due Soon: ${assignment.title}`, message })
@@ -115,7 +102,7 @@ export default async function handler(req, res) {
               if (lastNotified[notificationKey] !== todayKey) {
                 const message = `Reminder: Your "${event.subject}" class is starting in about ${minutesBefore} minutes.`;
                 notificationsToSend.push(
-                  fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/send-notification`, {
+                  fetch(`${process.env.VERCEL_URL}/api/send-notification`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-internal-secret': process.env.INTERNAL_SECRET },
                     body: JSON.stringify({ email: settings.email, subject: `Upcoming Class: ${event.subject}`, message })
@@ -131,7 +118,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Send all notifications and update all user documents concurrently
     await Promise.all([...notificationsToSend, ...userUpdates]);
     
     res.status(200).json({ message: `Processed all tasks. Attempted to send: ${notificationsToSend.length} notifications.` });

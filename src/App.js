@@ -147,11 +147,11 @@ const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
       alert('Please provide at least a title and a deadline.');
       return;
     }
-    const newAssignmentWithId = {
-      ...newAssignment,
-      id: Date.now(),
+    const newAssignmentWithId = { 
+      ...newAssignment, 
+      id: Date.now(), 
       deadline: new Date(newAssignment.deadline).toISOString(),
-      notificationSent: false
+      notificationSent: false 
     };
     setAssignments(prev => [...prev, newAssignmentWithId]);
     setNewAssignment({ title: '', subject: '', deadline: '' });
@@ -176,9 +176,7 @@ const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
   };
 
   return (
-    <div className="min-h-screen p-6 text-white relative">
-      <AnimatedBackground />
-      <div className="relative z-10 max-w-4xl mx-auto">
+    <div className="relative z-10 max-w-4xl mx-auto p-6">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-200">Assignment Tracker</h1>
           <button onClick={onClose} className="animated-back-btn">
@@ -187,17 +185,30 @@ const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
           </button>
         </div>
 
-        <Card className="p-6 mb-6 bg-gray-800 bg-opacity-70 backdrop-blur-sm">
+        <Card className="p-6 mb-8 bg-gray-800 bg-opacity-70 backdrop-blur-sm">
           <h3 className="text-xl font-semibold mb-4 text-gray-200">Add New Assignment</h3>
-          <div className="grid md:grid-cols-3 gap-4">
-            <input type="text" name="title" value={newAssignment.title} onChange={handleInputChange} placeholder="Assignment Title..." className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
-            <input type="text" name="subject" value={newAssignment.subject} onChange={handleInputChange} placeholder="Subject (e.g., DSP)" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
-            <input type="date" name="deadline" value={newAssignment.deadline} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
-          </div>
-          <div className="flex justify-end mt-4">
-            <button onClick={addAssignment} className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center gap-2">
-              <FaPlus /> Add Task
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            
+            <div className="md:col-span-1">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-400 mb-2">Title</label>
+              <input type="text" id="title" name="title" value={newAssignment.title} onChange={handleInputChange} placeholder="e.g., DSP Lab Report" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+
+            <div className="md:col-span-1">
+               <label htmlFor="subject" className="block text-sm font-medium text-gray-400 mb-2">Subject</label>
+              <input type="text" id="subject" name="subject" value={newAssignment.subject} onChange={handleInputChange} placeholder="e.g., ECE-301" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+
+            <div className="md:col-span-1">
+              <label htmlFor="deadline" className="block text-sm font-medium text-gray-400 mb-2">Deadline</label>
+              <input type="date" id="deadline" name="deadline" value={newAssignment.deadline} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+
+            <div className="md:col-span-1">
+              <button onClick={addAssignment} className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center gap-2">
+                <FaPlus /> Add Task
+              </button>
+            </div>
           </div>
         </Card>
 
@@ -227,7 +238,6 @@ const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
             </Card>
           )}
         </div>
-      </div>
     </div>
   );
 };

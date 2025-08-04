@@ -62,7 +62,7 @@ const FeedbackModal = ({ userEmail, onClose }) => {
           message
         })
       });
-
+ // recheck
       // Add specific check for 404 error
       if (response.status === 404) {
         console.error("Frontend Error: The API endpoint '/api/send-feedback' was not found. Make sure the file 'api/send-feedback.js' exists and the server is running correctly.");

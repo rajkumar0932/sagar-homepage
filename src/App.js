@@ -6,11 +6,13 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
 import { 
-  FaCalendarAlt, FaCheckCircle, FaClipboardList, FaDumbbell, FaAppleAlt, 
+  FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt, 
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart, 
   FaChevronLeft, FaChevronRight, FaPlus,  FaCheck, FaTimes, FaEdit,
-  FaCode // Add these new icons
+  FaCode,  FaTasks, FaEnvelope, FaPaperPlane
 } from 'react-icons/fa';
+
+
 // Reusable Card Component
 const Card = ({ children, className = "", onClick }) => (
   <div 
@@ -35,6 +37,190 @@ const SectionHeader = ({ title, icon, titleColor = 'text-gray-200' }) => (
     <h2 className={`text-2xl font-bold ${titleColor}`}>{title}</h2>
   </div>
 );
+const FeedbackModal = ({ userEmail, onClose }) => {
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState({ state: 'idle', text: '' }); // idle, sending, success, error
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!subject.trim() || !message.trim()) {
+      setStatus({ state: 'error', text: 'Please fill out both fields.' });
+      return;
+    }
+    setStatus({ state: 'sending', text: 'Sending...' });
+
+    try {
+      const response = await fetch('/api/send-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromEmail: userEmail,
+          subject,
+          message
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send feedback.');
+      }
+      
+      setStatus({ state: 'success', text: 'Feedback sent successfully! Thank you.' });
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+
+    } catch (error) {
+      setStatus({ state: 'error', text: error.message });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg p-8 relative border border-gray-700">
+        <h2 className="text-2xl font-bold text-gray-100 mb-6">Submit Feedback</h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Subject"
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Your feedback..."
+            rows="5"
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          ></textarea>
+          <div className="flex justify-between items-center">
+            <button type="button" onClick={onClose} className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors font-semibold">
+              Cancel
+            </button>
+            <div className="flex items-center gap-4">
+              {status.state !== 'idle' && (
+                <p className={`text-sm ${status.state === 'error' ? 'text-red-400' : 'text-green-400'}`}>
+                  {status.text}
+                </p>
+              )}
+              <button 
+                type="submit" 
+                disabled={status.state === 'sending'}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center gap-2 disabled:bg-gray-500"
+              >
+                <FaPaperPlane />
+                {status.state === 'sending' ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+
+// --- New Assignments Page Component ---
+const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
+  const [newAssignment, setNewAssignment] = useState({ title: '', subject: '', deadline: '' });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewAssignment(prev => ({ ...prev, [name]: value }));
+  };
+
+  const addAssignment = () => {
+    if (!newAssignment.title || !newAssignment.deadline) {
+      alert('Please provide at least a title and a deadline.');
+      return;
+    }
+    const newAssignmentWithId = { 
+      ...newAssignment, 
+      id: Date.now(), 
+      deadline: new Date(newAssignment.deadline).toISOString(),
+      notificationSent: false 
+    };
+    setAssignments(prev => [...prev, newAssignmentWithId]);
+    setNewAssignment({ title: '', subject: '', deadline: '' });
+  };
+
+  const deleteAssignment = (id) => {
+    setAssignments(prev => prev.filter(item => item.id !== id));
+  };
+
+  const getDaysLeft = (deadline) => {
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    const diff = deadlineDate.getTime() - now.getTime();
+
+    if (diff < 0) return { text: 'Past due', isUrgent: true, isVeryUrgent: true };
+    
+    const hours = Math.ceil(diff / (1000 * 60 * 60));
+    if (hours <= 24) return { text: `${hours} hour${hours !== 1 ? 's' : ''} left`, isUrgent: true, isVeryUrgent: true };
+
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return { text: `${days} day${days !== 1 ? 's' : ''} left`, isUrgent: days <= 3, isVeryUrgent: false };
+  };
+
+  return (
+    <div className="min-h-screen p-6 text-white relative">
+      <AnimatedBackground />
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-200">Assignment Tracker</h1>
+          <button onClick={onClose} className="animated-back-btn">
+            <div className="back-sign"><svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg></div>
+            <div className="back-text">Back</div>
+          </button>
+        </div>
+
+        <Card className="p-6 mb-6 bg-gray-800 bg-opacity-70 backdrop-blur-sm">
+          <h3 className="text-xl font-semibold mb-4 text-gray-200">Add New Assignment</h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <input type="text" name="title" value={newAssignment.title} onChange={handleInputChange} placeholder="Assignment Title..." className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            <input type="text" name="subject" value={newAssignment.subject} onChange={handleInputChange} placeholder="Subject (e.g., DSP)" className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            <input type="date" name="deadline" value={newAssignment.deadline} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          </div>
+          <div className="flex justify-end mt-4">
+            <button onClick={addAssignment} className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center gap-2">
+              <FaPlus /> Add Task
+            </button>
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-gray-200">Pending Tasks</h3>
+          {assignments && assignments.length > 0 ? assignments.sort((a, b) => new Date(a.deadline) - new Date(b.deadline)).map(item => {
+            const timeLeft = getDaysLeft(item.deadline);
+            const cardBorder = timeLeft.isVeryUrgent ? 'border-red-500 border-2' : timeLeft.isUrgent ? 'border-yellow-500 border-2' : 'border-gray-700 border';
+            return (
+              <Card key={item.id} className={`p-4 bg-gray-800 flex items-center justify-between transition-colors ${cardBorder}`}>
+                <div>
+                  <p className="font-bold text-lg text-gray-100">{item.title}</p>
+                  <p className="text-sm text-gray-400">{item.subject || 'General'}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`text-sm font-medium ${timeLeft.isVeryUrgent ? 'text-red-400' : 'text-yellow-400'}`}>{timeLeft.text}</span>
+                  <button onClick={() => deleteAssignment(item.id)} className="animated-delete-button">
+                     <svg viewBox="0 0 448 512" className="delete-svg-icon"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
+                  </button>
+                </div>
+              </Card>
+            );
+          }) : (
+            <Card className="p-8 text-center bg-gray-800">
+              <FaCheckCircle className="text-4xl text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-300">No pending assignments!</p>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }) => {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -69,14 +255,12 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
         </button>
       </div>
       
-      {/* Day headers */}
       <div className="grid grid-cols-7 gap-1 text-center text-sm font-semibold text-gray-400 mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div key={day} className="py-2">{day}</div>
         ))}
       </div>
       
-      {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((date) => {
           const isToday = date.toDateString() === new Date().toDateString();
@@ -113,21 +297,127 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
     </div>
   );
 };
-// New Component for the Coding Dashboard
-
-// New Component for the Coding Dashboard
-// --- SVG Icon Components for Coding Platforms ---
 
 
-// Updated Component for the Coding Dashboard
+const NotificationPage = ({ onClose, settings, onSave }) => {
+  const [localSettings, setLocalSettings] = useState(settings || {
+    phoneNumber: '',
+    email: '',
+    labNotify: false,
+    contestNotify: false,
+    notifyMinutesBefore: 15,
+  });
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
+
+  const handleSave = () => {
+    onSave(localSettings);
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setLocalSettings(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  return (
+    <div className="min-h-screen p-6 text-white relative">
+      <AnimatedBackground />
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-200">Notification Settings</h1>
+          <button onClick={onClose} className="animated-back-btn">
+            <div className="back-sign"><svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg></div>
+            <div className="back-text">Back</div>
+          </button>
+        </div>
+        
+        <DashboardCard className="p-6 md:p-8 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Phone Number (for SMS alerts)</label>
+            <input 
+              type="tel" 
+              name="phoneNumber"
+              value={localSettings.phoneNumber || ''}
+              onChange={handleInputChange}
+              placeholder="+919876543210" 
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Email (for email alerts)</label>
+            <input 
+              type="email" 
+              name="email"
+              value={localSettings.email || ''}
+              onChange={handleInputChange}
+              placeholder="you@example.com" 
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">Notify me minutes before an event</label>
+            <select 
+              name="notifyMinutesBefore"
+              value={localSettings.notifyMinutesBefore || 15}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
+            </select>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+              <span className="font-medium text-gray-200">Lab Period Reminders</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="labNotify" checked={localSettings.labNotify || false} onChange={handleInputChange} className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+              <span className="font-medium text-gray-200">Coding Contest Reminders</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="contestNotify" checked={localSettings.contestNotify || false} onChange={handleInputChange} className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end items-center gap-4 pt-4">
+            {isSaved && <span className="text-green-400 text-sm animate-pulse">Settings saved!</span>}
+            <button 
+              onClick={handleSave} 
+              className="px-6 py-3 bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-gray-500 transition-colors font-semibold"
+            >
+              Save Settings
+            </button>
+          </div>
+        </DashboardCard>
+      </div>
+    </div>
+  );
+};
+
+
 const CodingDashboard = ({ onClose, codingData, isLoading, isEditing, onEdit, onSave, tempHandles, setTempHandles }) => {
   const platforms = [
     { key: 'leetcode', name: 'LeetCode', color: 'text-yellow-400', icon: '/lc.jpg' },
     { key: 'codeforces', name: 'Codeforces', color: 'text-blue-400', icon: '/cf.jpg' },
     { key: 'codechef', name: 'CodeChef', color: 'text-orange-400', icon: '/cc.jpg' }
   ];
-
-  
 
   return (
     <div className="min-h-screen p-6 text-white relative">
@@ -189,12 +479,7 @@ const CodingDashboard = ({ onClose, codingData, isLoading, isEditing, onEdit, on
     </div>
   );
 };
-// --- New, Dedicated Page for Codeforces Stats ---
-// --- New, Dedicated Page for Codeforces Stats ---
-// --- New, Dedicated Page for Codeforces Stats ---
-// --- Final, Corrected Page for Codeforces Stats ---
-// --- Final, Corrected Page for Codeforces Stats ---
-// --- Final, Corrected Page for Codeforces Stats ---
+
 const CodeforcesProfilePage = ({ onClose }) => {
   const [handle, setHandle] = useState('');
   const [stats, setStats] = useState(null);
@@ -291,10 +576,6 @@ const CodeforcesProfilePage = ({ onClose }) => {
     </div>
   );
 };
-// --- New, Dedicated Page for LeetCode Stats ---
-// --- Final, Corrected Page for LeetCode Stats ---
-// --- Final, Corrected Page for LeetCode Stats ---
-// --- Updated Page for LeetCode Stats with Problem Breakdown ---
 const LeetCodeProfilePage = ({ onClose }) => {
   const [handle, setHandle] = useState('');
   const [stats, setStats] = useState(null);
@@ -380,23 +661,20 @@ const LeetCodeProfilePage = ({ onClose }) => {
   );
 };
 function App() {
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const handleEditCodingHandles = () => {
-    // When editing starts, populate the temporary state with current handles
     setTempCodingHandles(userProfile.codingHandles || { codeforces: '', leetcode: '', codechef: '' });
     setIsEditingCodingData(true);
   };
 
   const handleSaveCodingHandles = () => {
-    // When saving, update the main user profile
     setUserProfile(prev => ({
       ...prev,
       codingHandles: tempCodingHandles
     }));
     setIsEditingCodingData(false);
-    // The useEffect for fetching data will automatically run because userProfile.codingHandles will change
   };
 
-  
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -405,28 +683,26 @@ function App() {
   const [gymData, setGymData] = useState({});
   const [skinCareData, setSkinCareData] = useState({});
   const [groceryList, setGroceryList] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [notificationSettings, setNotificationSettings] = useState({});
   
-  // State for the Coding Dashboard
   const [codingData, setCodingData] = useState(null);
   const [isLoadingCodingData, setIsLoadingCodingData] = useState(false);
   const [isEditingCodingData, setIsEditingCodingData] = useState(false);
   const [tempCodingHandles, setTempCodingHandles] = useState({ codeforces: '', leetcode: '', codechef: '' });
 
-  // State for other components
   const [editingSubject, setEditingSubject] = useState(null);
   const [newGroceryItem, setNewGroceryItem] = useState('');
   const [views, setViews] = useState({
     attendance: false, schedule: false, skinCare: false, gym: false,
-    style: false, grocery: false, chat: false, coding: false, codeforcesProfile: false
+    style: false, grocery: false, chat: false, coding: false, 
+    codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isAnimating, setIsAnimating] = useState(false);
-  // Inside the App function
 
-// This useEffect fetches coding data whenever the user's handles change in their profile
 useEffect(() => {
   const fetchCodingData = async () => {
-    // Don't fetch if the handles are not set
     if (!userProfile?.codingHandles?.codeforces) {
       setCodingData({
         leetcode: { solved: 'Not Set', rating: 'N/A' },
@@ -439,8 +715,6 @@ useEffect(() => {
     setIsLoadingCodingData(true);
     try {
       const cfHandle = userProfile.codingHandles.codeforces || '';
-      // In the future, you'll add lcHandle and ccHandle here
-      
       const response = await fetch(`/api/coding-stats?cf=${cfHandle}`);
       const data = await response.json();
 
@@ -462,7 +736,7 @@ useEffect(() => {
   if (user && userProfile) {
     fetchCodingData();
   }
-},  [user, userProfile]); // Re-run when handles change // The dependency array ensures this runs when the user logs in
+},  [user, userProfile]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -490,6 +764,8 @@ useEffect(() => {
         setGymData(data.gymData || { streak: 0, calendar: {} });
         setSkinCareData(data.skinCareData || { streak: 0, calendar: {} });
         setGroceryList(data.groceryList || []);
+        setAssignments(data.assignments || []);
+        setNotificationSettings(data.notificationSettings || { phoneNumber: '', email: '', labNotify: false, contestNotify: false, notifyMinutesBefore: 15 });
         setCodingData(data.codingData || { leetcode: { solved: '0', rating: '0' }, codeforces: { solved: '0', rating: '0' }, codechef: { solved: '0', rating: '0' } });
       } else {
         console.log("User document not found for this user. This might happen right after sign-up before the doc is created.");
@@ -511,19 +787,16 @@ useEffect(() => {
           gymData,
           skinCareData,
           groceryList,
-          codingData ,// <-- 1. Add this line
-          codingHandles: {
-            leetcode: '',
-            codeforces: '',
-            codechef: ''
-          }
+          assignments,
+          codingData,
+          notificationSettings,
         }, { merge: true });
       };
       saveData();
     }, 1500);
 
     return () => clearTimeout(handler);
-  }, [attendanceData, gymData, skinCareData, groceryList, userProfile, user, isLoading, codingData]); // <-- 2. And add codingData here [attendanceData, gymData, skinCareData, groceryList, userProfile, user, isLoading]);
+  }, [attendanceData, gymData, skinCareData, groceryList, assignments, userProfile, user, isLoading, codingData, notificationSettings]);
 
   const staticData = useMemo(() => ({
     schedule: [
@@ -594,7 +867,7 @@ useEffect(() => {
   const getCurrentDay = useCallback(() => new Date().toLocaleDateString('en-US', { weekday: 'long' }), []);
   
   const updateView = useCallback((viewName, value) => {
-    const newViews = { attendance: false, schedule: false, skinCare: false, gym: false, style: false, grocery: false, chat: false, coding: false, codeforcesProfile: false, leetcodeProfile: false };
+    const newViews = { attendance: false, schedule: false, skinCare: false, gym: false, style: false, grocery: false, chat: false, coding: false, codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false };
     newViews[viewName] = value;
     setViews(newViews);
   }, []);
@@ -628,8 +901,6 @@ useEffect(() => {
   
   const deleteGroceryItem = useCallback((id) => setGroceryList(prev => prev.filter(item => item.id !== id)), []);
 
-  // Replace your current loading section with this:
-
 if (isLoading) {
   return (
     <div className="min-h-screen relative">
@@ -660,6 +931,8 @@ if (isLoading) {
   // --- Conditional Rendering for Views ---
   
   if (views.chat) return <Chat onClose={() => updateView('chat', false)} />;
+  if (views.notifications) return <NotificationPage onClose={() => updateView('notifications', false)} settings={notificationSettings} onSave={setNotificationSettings} />;
+  if (views.assignments) return <AssignmentsPage onClose={() => updateView('assignments', false)} assignments={assignments} setAssignments={setAssignments} />;
   if (views.coding) return <CodingDashboard 
   onClose={() => updateView('coding', false)} 
   codingData={codingData}
@@ -667,7 +940,6 @@ if (isLoading) {
   isEditing={isEditingCodingData}
   onEdit={handleEditCodingHandles}
   onSave={handleSaveCodingHandles}
-  // Add these two missing props:
   tempHandles={tempCodingHandles}
   setTempHandles={setTempCodingHandles}
 />;
@@ -1063,7 +1335,6 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           </span>
         </div>
         
-        {/* Animated Delete Button */}
         <button 
           onClick={() => deleteGroceryItem(item.id)} 
           className="animated-delete-button"
@@ -1092,7 +1363,6 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
   
   // --- MAIN DASHBOARD ---
   
-
   return (
     <div className="min-h-screen text-white relative">
       <AnimatedBackground />
@@ -1130,10 +1400,10 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           </div>
         </div>
 
-      {/* College Section */}
+      {/* College & Life Section */}
       <section>
           <SectionHeader 
-            title="College" 
+            title="College & Life" 
             icon={<FaCalendarAlt className="text-2xl text-blue-400" />} 
             titleColor="text-blue-400"
           />
@@ -1152,19 +1422,19 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                 <FaCheckCircle className="text-4xl text-green-400" />
                 <div>
                   <h3 className="font-semibold text-gray-200">Attendance</h3>
-                  <p className="text-sm text-gray-400">Track attendance</p>
+                  <p className="text-sm text-gray-400">Track classes</p>
                 </div>
               </div>
             </DashboardCard>
-            <DashboardCard className="p-8">
-              <div className="flex items-center gap-4">
-                <FaClipboardList className="text-4xl text-purple-400" />
-                <div>
-                  <h3 className="font-semibold text-gray-200">Assignments</h3>
-                  <p className="text-sm text-gray-400">Track pending tasks</p>
-                </div>
-              </div>
-            </DashboardCard>
+             <DashboardCard className="p-8" onClick={() => updateView('assignments', true)}>
+               <div className="flex items-center gap-4">
+                 <FaTasks className="text-4xl text-purple-400" />
+                 <div>
+                   <h3 className="font-semibold text-gray-200">Assignments</h3>
+                   <p className="text-sm text-gray-400">Track pending tasks</p>
+                 </div>
+               </div>
+             </DashboardCard>
           </div>
         </section>
 
@@ -1206,18 +1476,14 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           </div>
         </section>
 
-       {/* Coding Section */}
-      {/* Coding Section */}
       <section>
           <SectionHeader 
             title="Coding" 
             icon={<FaCode className="text-2xl text-green-400" />} 
             titleColor="text-green-400"
           />
-          {/* This div creates the two-column grid layout */}
           <div className="grid md:grid-cols-2 gap-6">
             
-             {/* Codeforces Card */}
              <DashboardCard className="p-8" onClick={() => updateView('codeforcesProfile', true)}>
                <div className="flex items-center gap-4">
                  <img src="/cf.jpg" alt="Codeforces Logo" className="w-10 h-10 object-contain rounded-md" />
@@ -1228,7 +1494,6 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                </div>
              </DashboardCard>
 
-             {/* LeetCode Card */}
              <DashboardCard className="p-8" onClick={() => updateView('leetcodeProfile', true)}>
                <div className="flex items-center gap-4">
                  <img src="/lc.jpg" alt="LeetCode Logo" className="w-10 h-10 object-contain rounded-md" />
@@ -1271,7 +1536,21 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
         </div>
         
       </div>
-    </div>
+      
+      <button 
+        onClick={() => setShowFeedbackModal(true)}
+        className="fixed bottom-5 right-5 w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-3xl shadow-lg hover:bg-purple-700 hover:scale-110 transition-all duration-300 z-40"
+        aria-label="Submit Feedback"
+      >
+        <FaEnvelope />
+      </button>
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && user && (
+        <FeedbackModal userEmail={user.email} onClose={() => setShowFeedbackModal(false)} />
+      )}
+       </div>
+   
   );
 }
 

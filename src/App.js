@@ -1,3 +1,5 @@
+// src/App.js
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Chat from './chat';
 import { db, auth } from './firebase';
@@ -5,17 +7,17 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
-import { 
-  FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt, 
-  FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart, 
-  FaChevronLeft, FaChevronRight, FaPlus,  FaCheck, FaTimes, FaEdit,
-  FaCode,  FaTasks, FaEnvelope, FaPaperPlane
+import {
+  FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt,
+  FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart,
+  FaChevronLeft, FaChevronRight, FaPlus, FaCheck, FaTimes, FaEdit,
+  FaCode, FaTasks, FaEnvelope, FaPaperPlane
 } from 'react-icons/fa';
 
 
 // Reusable Card Component
 const Card = ({ children, className = "", onClick }) => (
-  <div 
+  <div
     className={`rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:transform hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''} ${className}`}
     onClick={onClick}
   >
@@ -23,7 +25,7 @@ const Card = ({ children, className = "", onClick }) => (
   </div>
 );
 const DashboardCard = ({ children, className = "", onClick }) => (
-  <div 
+  <div
     className={`bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:transform hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''} ${className}`}
     onClick={onClick}
   >
@@ -105,8 +107,8 @@ const FeedbackModal = ({ userEmail, onClose }) => {
                   {status.text}
                 </p>
               )}
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={status.state === 'sending'}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center gap-2 disabled:bg-gray-500"
               >
@@ -136,11 +138,11 @@ const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
       alert('Please provide at least a title and a deadline.');
       return;
     }
-    const newAssignmentWithId = { 
-      ...newAssignment, 
-      id: Date.now(), 
+    const newAssignmentWithId = {
+      ...newAssignment,
+      id: Date.now(),
       deadline: new Date(newAssignment.deadline).toISOString(),
-      notificationSent: false 
+      notificationSent: false
     };
     setAssignments(prev => [...prev, newAssignmentWithId]);
     setNewAssignment({ title: '', subject: '', deadline: '' });
@@ -238,8 +240,8 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
   return (
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-6">
-        <button 
-          onClick={() => setCurrentMonth(new Date(year, month - 1))} 
+        <button
+          onClick={() => setCurrentMonth(new Date(year, month - 1))}
           className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
         >
           <FaChevronLeft />
@@ -247,8 +249,8 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
         <h3 className="text-xl font-semibold text-gray-200">
           {monthNames[month]} {year}
         </h3>
-        <button 
-          onClick={() => setCurrentMonth(new Date(year, month + 1))} 
+        <button
+          onClick={() => setCurrentMonth(new Date(year, month + 1))}
           className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
         >
           <FaChevronRight />
@@ -284,9 +286,9 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
           }
           
           return (
-            <div 
-              key={date.toISOString()} 
-              onClick={() => isCurrentMonth && onMarkDay(date, !dayData)} 
+            <div
+              key={date.toISOString()}
+              onClick={() => isCurrentMonth && onMarkDay(date, !dayData)}
               className={dayClasses}
             >
               {date.getDate()}
@@ -342,31 +344,31 @@ const NotificationPage = ({ onClose, settings, onSave }) => {
         <DashboardCard className="p-6 md:p-8 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">Phone Number (for SMS alerts)</label>
-            <input 
-              type="tel" 
+            <input
+              type="tel"
               name="phoneNumber"
               value={localSettings.phoneNumber || ''}
               onChange={handleInputChange}
-              placeholder="+919876543210" 
+              placeholder="+919876543210"
               className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">Email (for email alerts)</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               name="email"
               value={localSettings.email || ''}
               onChange={handleInputChange}
-              placeholder="you@example.com" 
+              placeholder="you@example.com"
               className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">Notify me minutes before an event</label>
-            <select 
+            <select
               name="notifyMinutesBefore"
               value={localSettings.notifyMinutesBefore || 15}
               onChange={handleInputChange}
@@ -398,8 +400,8 @@ const NotificationPage = ({ onClose, settings, onSave }) => {
 
           <div className="flex justify-end items-center gap-4 pt-4">
             {isSaved && <span className="text-green-400 text-sm animate-pulse">Settings saved!</span>}
-            <button 
-              onClick={handleSave} 
+            <button
+              onClick={handleSave}
               className="px-6 py-3 bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-gray-500 transition-colors font-semibold"
             >
               Save Settings
@@ -427,8 +429,8 @@ const CodingDashboard = ({ onClose, codingData, isLoading, isEditing, onEdit, on
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-bold text-gray-200">Coding Dashboard</h1>
             <div className="flex items-center gap-4">
-              <button 
-                onClick={isEditing ? onSave : onEdit} 
+              <button
+                onClick={isEditing ? onSave : onEdit}
                 className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
               >
                 {isEditing ? <FaCheck /> : <FaEdit />}
@@ -452,8 +454,8 @@ const CodingDashboard = ({ onClose, codingData, isLoading, isEditing, onEdit, on
                 {isEditing ? (
                   <div className="space-y-2">
                     <label className="text-sm text-gray-400">Username</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={tempHandles[p.key]}
                       onChange={(e) => setTempHandles(prev => ({...prev, [p.key]: e.target.value}))}
                       className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -530,12 +532,12 @@ const CodeforcesProfilePage = ({ onClose }) => {
         </div>
         
         <div className="flex gap-2 mb-8">
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && fetchStats()}
-            placeholder="Enter Codeforces Handle..." 
+            placeholder="Enter Codeforces Handle..."
             className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button onClick={fetchStats} disabled={isLoading} className="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-500 transition-colors">
@@ -626,12 +628,12 @@ const LeetCodeProfilePage = ({ onClose }) => {
         </div>
         
         <div className="flex gap-2 mb-8">
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && fetchStats()}
-            placeholder="Enter LeetCode Handle..." 
+            placeholder="Enter LeetCode Handle..."
             className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
           />
           <button onClick={fetchStats} disabled={isLoading} className="px-6 py-3 bg-yellow-600 rounded-lg hover:bg-yellow-700 disabled:bg-gray-500 transition-colors">
@@ -695,7 +697,7 @@ function App() {
   const [newGroceryItem, setNewGroceryItem] = useState('');
   const [views, setViews] = useState({
     attendance: false, schedule: false, skinCare: false, gym: false,
-    style: false, grocery: false, chat: false, coding: false, 
+    style: false, grocery: false, chat: false, coding: false,
     codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -759,7 +761,7 @@ useEffect(() => {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setUserProfile(data); 
+        setUserProfile(data);
         setAttendanceData(data.attendanceData || {});
         setGymData(data.gymData || { streak: 0, calendar: {} });
         setSkinCareData(data.skinCareData || { streak: 0, calendar: {} });
@@ -843,7 +845,7 @@ useEffect(() => {
   }, [attendanceData]);
   
   const getSubjectColor = useCallback((subject) => {
-    if (!subject) return ''; 
+    if (!subject) return '';
     if (subject.includes('LAB') || subject.includes('Project')) {
       if (subject.includes('DSP')) return 'bg-green-500 text-white font-semibold';
       if (subject.includes('EIM')) return 'bg-blue-500 text-white font-semibold';
@@ -933,8 +935,8 @@ if (isLoading) {
   if (views.chat) return <Chat onClose={() => updateView('chat', false)} />;
   if (views.notifications) return <NotificationPage onClose={() => updateView('notifications', false)} settings={notificationSettings} onSave={setNotificationSettings} />;
   if (views.assignments) return <AssignmentsPage onClose={() => updateView('assignments', false)} assignments={assignments} setAssignments={setAssignments} />;
-  if (views.coding) return <CodingDashboard 
-  onClose={() => updateView('coding', false)} 
+  if (views.coding) return <CodingDashboard
+  onClose={() => updateView('coding', false)}
   codingData={codingData}
   isLoading={isLoadingCodingData}
   isEditing={isEditingCodingData}
@@ -957,8 +959,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-200">Attendance Tracker</h1>
               
-<button 
-  onClick={() => updateView('attendance', false)} 
+<button
+  onClick={() => updateView('attendance', false)}
   className="animated-back-btn"
 >
   <div className="back-sign">
@@ -1079,8 +1081,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Class Schedule</h1>
-              <button 
-  onClick={() => updateView('schedule', false)} 
+              <button
+  onClick={() => updateView('schedule', false)}
   className="animated-back-btn"
 >
   <div className="back-sign">
@@ -1133,8 +1135,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Gym Tracker</h1>
-              <button 
-  onClick={() => updateView('gym', false)} 
+              <button
+  onClick={() => updateView('gym', false)}
   className="animated-back-btn"
 >
   <div className="back-sign">
@@ -1186,8 +1188,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Skincare Routine</h1>
-              <button 
-  onClick={() => updateView('skinCare', false)} 
+              <button
+  onClick={() => updateView('skinCare', false)}
   className="animated-back-btn"
 >
   <div className="back-sign">
@@ -1238,8 +1240,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Style Guide</h1>
-              <button 
-  onClick={() => updateView('style', false)} 
+              <button
+  onClick={() => updateView('style', false)}
   className="animated-back-btn"
 >
   <div className="back-sign">
@@ -1299,8 +1301,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Grocery List</h1>
-              <button 
-  onClick={() => updateView('grocery', false)} 
+              <button
+  onClick={() => updateView('grocery', false)}
   className="animated-back-btn"
 >
   <div className="back-sign">
@@ -1324,19 +1326,19 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
     <Card key={item.id} className="p-4 bg-gray-800">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <input 
-            type="checkbox" 
-            checked={item.completed} 
-            onChange={() => toggleGroceryItem(item.id)} 
-            className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600" 
+          <input
+            type="checkbox"
+            checked={item.completed}
+            onChange={() => toggleGroceryItem(item.id)}
+            className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600"
           />
           <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>
             {item.text}
           </span>
         </div>
         
-        <button 
-          onClick={() => deleteGroceryItem(item.id)} 
+        <button
+          onClick={() => deleteGroceryItem(item.id)}
           className="animated-delete-button"
         >
           <svg viewBox="0 0 448 512" className="delete-svg-icon">
@@ -1377,8 +1379,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                 </span>
                 <img src="/profile.jpg" alt="Sagar's profile" className={`profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover ${isAnimating ? 'animate-flip' : ''}`} onClick={handleImageClick} />
               </h1>
-              <button 
-  onClick={() => signOut(auth)} 
+              <button
+  onClick={() => signOut(auth)}
   className="animated-logout-btn"
 >
   <div className="logout-sign">
@@ -1402,9 +1404,9 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
 
       {/* College & Life Section */}
       <section>
-          <SectionHeader 
-            title="College & Life" 
-            icon={<FaCalendarAlt className="text-2xl text-blue-400" />} 
+          <SectionHeader
+            title="College & Life"
+            icon={<FaCalendarAlt className="text-2xl text-blue-400" />}
             titleColor="text-blue-400"
           />
           <div className="grid md:grid-cols-3 gap-6">
@@ -1440,9 +1442,9 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
 
         {/* Fitness Section */}
         <section>
-          <SectionHeader 
-            title="Fitness" 
-            icon={<FaDumbbell className="text-2xl text-red-400" />} 
+          <SectionHeader
+            title="Fitness"
+            icon={<FaDumbbell className="text-2xl text-red-400" />}
             titleColor="text-red-400"
           />
           <div className="grid md:grid-cols-3 gap-6">
@@ -1477,9 +1479,9 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
         </section>
 
       <section>
-          <SectionHeader 
-            title="Coding" 
-            icon={<FaCode className="text-2xl text-green-400" />} 
+          <SectionHeader
+            title="Coding"
+            icon={<FaCode className="text-2xl text-green-400" />}
             titleColor="text-green-400"
           />
           <div className="grid md:grid-cols-2 gap-6">
@@ -1537,7 +1539,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
         
       </div>
       
-      <button 
+      <button
         onClick={() => setShowFeedbackModal(true)}
         className="fixed bottom-5 right-5 w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-3xl shadow-lg hover:bg-purple-700 hover:scale-110 transition-all duration-300 z-40"
         aria-label="Submit Feedback"

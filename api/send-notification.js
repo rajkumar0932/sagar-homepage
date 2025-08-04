@@ -1,20 +1,24 @@
-// File: /api/send-notification.js
-// This function handles the actual sending of emails via Brevo.
+// File: /api/send-feedback.js
+// This function handles sending feedback emails via Brevo.
 
 export default async function handler(req, res) {
-    // Secure this endpoint so it can only be called by our cron job
-    if (req.method !== 'POST' || req.headers['x-internal-secret'] !== process.env.INTERNAL_SECRET) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Ensure this is a POST request
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
   
-    const { email, subject, message } = req.body;
+    // Destructure the expected fields from the request body
+    const { fromEmail, subject, message } = req.body;
     const brevoApiKey = process.env.BREVO_API_KEY;
+    const recipientEmail = 'kumarraj0932@gmail.com'; // Your email address
   
-    if (!email || !subject || !message || !brevoApiKey) {
+    // Validate that all required information is present
+    if (!fromEmail || !subject || !message || !brevoApiKey) {
       return res.status(400).json({ error: 'Missing required fields or API key.' });
     }
   
     try {
+      // Make the API call to Brevo
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
@@ -24,35 +28,36 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           sender: {
-            // Using your verified sender email address
-            email: 'kumarraj0932@gmail.com', 
-            name: 'Sagar\'s Dashboard'
+            email: fromEmail,
+            name: 'Feedback Form' // This name will appear as the sender
           },
-          to: [{ email: email }],
-          subject: subject,
+          to: [{ email: recipientEmail }], // This is where the feedback will be sent
+          subject: `Feedback: ${subject}`,
           htmlContent: `
             <html>
               <body>
-                <h1>Reminder</h1>
-                <p>${message}</p>
-                <p><em>This is an automated notification from your personal dashboard.</em></p>
+                <h1>New Feedback Received</h1>
+                <p><strong>From:</strong> ${fromEmail}</p>
+                <p><strong>Subject:</strong> ${subject}</p>
+                <hr />
+                <p>${message.replace(/\n/g, "<br>")}</p>
               </body>
             </html>
           `
         })
       });
   
+      // Handle non-successful responses from the Brevo API
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Brevo API Error: ${errorData.message}`);
+        throw new Error(`Brevo API Error: ${errorData.message || 'Failed to send email'}`);
       }
   
       const data = await response.json();
       return res.status(200).json({ success: true, messageId: data.messageId });
   
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error('Failed to send feedback email:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
-  

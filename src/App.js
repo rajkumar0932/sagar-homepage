@@ -826,8 +826,8 @@ useEffect(() => {
         { time: '11:00-12', monday: 'ADC(TM)', tuesday: 'IM(ABC)', wednesday: 'MPMC LAB', thursday: 'DSP', friday: 'EIM LAB' },
         { time: '12:00-1', monday: 'IM(ABC)', tuesday: 'MPMC', wednesday: 'MPMC LAB', thursday: 'BREAK', friday: 'EIM LAB' },
         { time: '1:00-2', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' },
-        { time: '2:00-3', monday: 'MPMC', tuesday: 'DSP LAB', wednesday: 'DSP(SRC)', thursday: 'BREAK', friday: 'EIM(SB)' },
-        { time: '3:00-4', monday: 'Mini Project', tuesday: 'DSP LAB', wednesday: 'ADC(TM)', thursday: 'BREAK', friday: 'BREAK' },
+        { time: '2:00-3', monday: 'MPMC', tuesday: 'DSP LAB', wednesday: 'DSP(SRC)', thursday: 'ADC LAB', friday: 'EIM(SB)' },
+        { time: '3:00-4', monday: 'Mini Project', tuesday: 'DSP LAB', wednesday: 'ADC(TM)', thursday: 'ADC LAB', friday: 'BREAK' },
         { time: '4:00-5', monday: 'Mini Project', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' }
     ],
     skinCareRoutine: {

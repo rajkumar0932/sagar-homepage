@@ -7,11 +7,12 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
+import './NewToggle.css'; // Import the new CSS for the switch
 import {
   FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt,
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart,
   FaChevronLeft, FaChevronRight, FaPlus, FaCheck, FaTimes, FaEdit,
-  FaCode, FaTasks, FaEnvelope, FaPaperPlane, FaPalette
+  FaCode, FaTasks, FaEnvelope, FaPaperPlane
 } from 'react-icons/fa';
 
 
@@ -33,11 +34,14 @@ const DashboardCard = ({ children, className = "", onClick }) => (
   </div>
 );
 
-const SectionHeader = ({ title, icon, titleColor = 'text-gray-200' }) => (
-  <div className="flex items-center gap-3 mb-6">
-    {icon}
-    <h2 className={`text-2xl font-bold ${titleColor}`}>{title}</h2>
-  </div>
+const SectionHeader = ({ title, icon, titleColor = 'text-gray-200', children }) => (
+    <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+            {icon}
+            <h2 className={`text-2xl font-bold ${titleColor}`}>{title}</h2>
+        </div>
+        {children}
+    </div>
 );
 const FeedbackModal = ({ userEmail, onClose }) => {
   const [subject, setSubject] = useState('');
@@ -1387,15 +1391,30 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
   
   return (
     <div className="min-h-screen text-white relative">
-      <button
-        onClick={() => setIsDynamicBackground(prev => !prev)}
-        className="fixed top-5 left-5 z-50 p-3 bg-gray-800 bg-opacity-50 rounded-full text-white hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-        aria-label="Toggle Background"
-        title="Toggle Dynamic Background"
-      >
-        <FaPalette />
-      </button>
       {isDynamicBackground && <AnimatedBackground />}
+
+      <div className="new-switch-container">
+        <input 
+            type="checkbox" 
+            id="checkbox" 
+            checked={isDynamicBackground}
+            onChange={() => setIsDynamicBackground(prev => !prev)}
+        />
+        <label htmlFor="checkbox" className="switch">
+          BG
+          <svg
+            className="slider"
+            viewBox="0 0 512 512"
+            height="1em"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V256c0 17.7 14.3 32 32 32s32-14.3 32-32V32zM143.5 120.6c13.6-11.3 15.4-31.5 4.1-45.1s-31.5-15.4-45.1-4.1C49.7 115.4 16 181.8 16 256c0 132.5 107.5 240 240 240s240-107.5 240-240c0-74.2-33.8-140.6-86.6-184.6c-13.6-11.3-33.8-9.4-45.1 4.1s-9.4 33.8 4.1 45.1c38.9 32.3 63.5 81 63.5 135.4c0 97.2-78.8 176-176 176s-176-78.8-176-176c0-54.4 24.7-103.1 63.5-135.4z"
+            ></path>
+          </svg>
+        </label>
+      </div>
+
       <div className="max-w-4xl mx-auto p-6 space-y-16 relative z-10">
         
         <div className="relative">
@@ -1408,16 +1427,16 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                 <img src="/profile.jpg" alt="Sagar's profile" className={`profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover ${isAnimating ? 'animate-flip' : ''}`} onClick={handleImageClick} />
               </h1>
               <button
-  onClick={() => signOut(auth)}
-  className="animated-logout-btn"
->
-  <div className="logout-sign">
-    <svg viewBox="0 0 512 512">
-      <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
-    </svg>
-  </div>
-  <div className="logout-text">Logout</div>
-</button>
+                onClick={() => signOut(auth)}
+                className="animated-logout-btn"
+              >
+                <div className="logout-sign">
+                  <svg viewBox="0 0 512 512">
+                    <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
+                  </svg>
+                </div>
+                <div className="logout-text">Logout</div>
+              </button>
             </div>
             <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 text-white relative">
             
@@ -1436,7 +1455,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             title="College & Life"
             icon={<FaCalendarAlt className="text-2xl text-blue-400" />}
             titleColor="text-blue-400"
-          />
+          >
+          </SectionHeader>
           <div className="grid md:grid-cols-3 gap-6">
             <DashboardCard className="p-8" onClick={() => updateView('schedule', true)}>
               <div className="flex items-center gap-4">

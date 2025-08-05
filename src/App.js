@@ -7,7 +7,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
-import './NewToggle.css'; // Import the new CSS for the switch
+import Sidebar from './Sidebar'; // Import the new Sidebar component
+import './NewToggle.css'; 
 import {
   FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt,
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart,
@@ -704,6 +705,7 @@ function App() {
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDynamicBackground, setIsDynamicBackground] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar
 
   const [attendanceData, setAttendanceData] = useState({});
   const [gymData, setGymData] = useState({});
@@ -725,7 +727,6 @@ function App() {
     codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [isAnimating, setIsAnimating] = useState(false);
 
 useEffect(() => {
   const fetchCodingData = async () => {
@@ -897,7 +898,6 @@ useEffect(() => {
     newViews[viewName] = value;
     setViews(newViews);
   }, []);
-  const handleImageClick = () => setIsAnimating(is => !is);
 
   const markAttendance = useCallback((subject, present) => {
     setAttendanceData(prev => {
@@ -1391,215 +1391,196 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
   
   return (
     <div className="min-h-screen text-white relative">
-      {isDynamicBackground && <AnimatedBackground />}
-
-      <div className="new-switch-container">
-        <input 
-            type="checkbox" 
-            id="checkbox" 
-            checked={isDynamicBackground}
-            onChange={() => setIsDynamicBackground(prev => !prev)}
+        <Sidebar
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            userName={userProfile?.firstName || user.email.split('@')[0]}
+            userEmail={user.email}
+            isDynamicBackground={isDynamicBackground}
+            onToggleBackground={() => setIsDynamicBackground(p => !p)}
+            onLogout={() => signOut(auth)}
         />
-        <label htmlFor="checkbox" className="switch">
-          BG
-          <svg
-            className="slider"
-            viewBox="0 0 512 512"
-            height="1em"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V256c0 17.7 14.3 32 32 32s32-14.3 32-32V32zM143.5 120.6c13.6-11.3 15.4-31.5 4.1-45.1s-31.5-15.4-45.1-4.1C49.7 115.4 16 181.8 16 256c0 132.5 107.5 240 240 240s240-107.5 240-240c0-74.2-33.8-140.6-86.6-184.6c-13.6-11.3-33.8-9.4-45.1 4.1s-9.4 33.8 4.1 45.1c38.9 32.3 63.5 81 63.5 135.4c0 97.2-78.8 176-176 176s-176-78.8-176-176c0-54.4 24.7-103.1 63.5-135.4z"
-            ></path>
-          </svg>
-        </label>
-      </div>
 
-      <div className="max-w-4xl mx-auto p-6 space-y-16 relative z-10">
-        
-        <div className="relative">
-          <div className="text-center pt-12 relative z-10">
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <h1 className="text-7xl font-bold flex items-center justify-center gap-6">
-                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                  Hi, {userProfile?.firstName || user.email.split('@')[0]}
-                </span>
-                <img src="/profile.jpg" alt="Sagar's profile" className={`profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover ${isAnimating ? 'animate-flip' : ''}`} onClick={handleImageClick} />
-              </h1>
-              <button
-                onClick={() => signOut(auth)}
-                className="animated-logout-btn"
-              >
-                <div className="logout-sign">
-                  <svg viewBox="0 0 512 512">
-                    <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
-                  </svg>
-                </div>
-                <div className="logout-text">Logout</div>
-              </button>
-            </div>
-            <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 text-white relative">
-            
-              <div className="relative z-10">
-                <FaQuoteLeft className="text-3xl opacity-75 mb-4 mx-auto" />
-                <p className="text-xl font-medium mb-4 leading-relaxed">"The way to get started is to quit talking and begin doing."</p>
-                <p className="text-sm opacity-90 font-medium">— Walt Disney</p>
-              </div>
-            </Card>
-          </div>
-        </div>
-
-      {/* College & Life Section */}
-      <section>
-          <SectionHeader
-            title="College & Life"
-            icon={<FaCalendarAlt className="text-2xl text-blue-400" />}
-            titleColor="text-blue-400"
-          >
-          </SectionHeader>
-          <div className="grid md:grid-cols-3 gap-6">
-            <DashboardCard className="p-8" onClick={() => updateView('schedule', true)}>
-              <div className="flex items-center gap-4">
-                <FaCalendarAlt className="text-4xl text-blue-400" />
-                <div>
-                  <h3 className="font-semibold text-gray-200">Schedule</h3>
-                  <p className="text-sm text-gray-400">View timetable</p>
-                </div>
-              </div>
-            </DashboardCard>
-            <DashboardCard className="p-8" onClick={() => updateView('attendance', true)}>
-              <div className="flex items-center gap-4">
-                <FaCheckCircle className="text-4xl text-green-400" />
-                <div>
-                  <h3 className="font-semibold text-gray-200">Attendance</h3>
-                  <p className="text-sm text-gray-400">Track classes</p>
-                </div>
-              </div>
-            </DashboardCard>
-             <DashboardCard className="p-8" onClick={() => updateView('assignments', true)}>
-               <div className="flex items-center gap-4">
-                 <FaTasks className="text-4xl text-purple-400" />
-                 <div>
-                   <h3 className="font-semibold text-gray-200">Assignments</h3>
-                   <p className="text-sm text-gray-400">Track pending tasks</p>
-                 </div>
-               </div>
-             </DashboardCard>
-          </div>
-        </section>
-
-        {/* Fitness Section */}
-        <section>
-          <SectionHeader
-            title="Fitness"
-            icon={<FaDumbbell className="text-2xl text-red-400" />}
-            titleColor="text-red-400"
-          />
-          <div className="grid md:grid-cols-3 gap-6">
-             <DashboardCard className="p-8" onClick={() => updateView('gym', true)}>
-               <div className="flex items-center gap-4">
-                 <FaDumbbell className="text-4xl text-red-400" />
-                 <div>
-                   <h3 className="font-semibold text-gray-200">Gym Tracker</h3>
-                   <p className="text-sm text-gray-400">Log workouts</p>
-                 </div>
-               </div>
-             </DashboardCard>
-             <DashboardCard className="p-8">
-               <div className="flex items-center gap-4">
-                 <FaAppleAlt className="text-4xl text-green-400" />
-                 <div>
-                   <h3 className="font-semibold text-gray-200">Diet Tracker</h3>
-                   <p className="text-sm text-gray-400">Monitor nutrition</p>
-                 </div>
-               </div>
-             </DashboardCard>
-             <DashboardCard className="p-8" onClick={() => updateView('grocery', true)}>
-               <div className="flex items-center gap-4">
-                 <FaShoppingCart className="text-4xl text-orange-400" />
-                 <div>
-                   <h3 className="font-semibold text-gray-200">Grocery List</h3>
-                   <p className="text-sm text-gray-400">Plan shopping</p>
-                 </div>
-               </div>
-             </DashboardCard>
-          </div>
-        </section>
-
-      <section>
-          <SectionHeader
-            title="Coding"
-            icon={<FaCode className="text-2xl text-green-400" />}
-            titleColor="text-green-400"
-          />
-          <div className="grid md:grid-cols-2 gap-6">
-            
-             <DashboardCard className="p-8" onClick={() => updateView('codeforcesProfile', true)}>
-               <div className="flex items-center gap-4">
-                 <img src="/cf.jpg" alt="Codeforces Logo" className="w-10 h-10 object-contain rounded-md" />
-                 <div>
-                   <h3 className="font-semibold text-gray-200">Codeforces Stats</h3>
-                   <p className="text-sm text-gray-400">View detailed performance</p>
-                 </div>
-               </div>
-             </DashboardCard>
-
-             <DashboardCard className="p-8" onClick={() => updateView('leetcodeProfile', true)}>
-               <div className="flex items-center gap-4">
-                 <img src="/lc.jpg" alt="LeetCode Logo" className="w-10 h-10 object-contain rounded-md" />
-                 <div>
-                   <h3 className="font-semibold text-gray-200">LeetCode Stats</h3>
-                   <p className="text-sm text-gray-400">View detailed performance</p>
-                 </div>
-               </div>
-             </DashboardCard>
-
-          </div>
-        </section>
-       
-
-        <div className="space-y-6">
-          <Card className="p-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
-            <div className="flex items-start gap-3">
-              <FaQuoteLeft className="text-2xl opacity-75" />
-              <div>
-                <p className="text-lg font-medium">"Success is not final, failure is not fatal: it is the courage to continue that counts."</p>
-                <p className="text-sm opacity-90 mt-2">— Winston Churchill</p>
-              </div>
-            </div>
-          </Card>
-          <Card onClick={() => updateView('chat', true)} className="p-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 relative">
-    
-            <div className="relative z-10">
-              <div className="flex items-center gap-4">
-                <FaRobot className="text-3xl" />
-                <div>
-                  <h3 className="font-semibold text-lg">Chat with AI Assistant</h3>
-                  <p className="text-sm opacity-90">Personalized help and guidance</p>
-                </div>
-                <button className="ml-auto px-6 py-3 bg-white text-orange-600 rounded-xl hover:bg-gray-100 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                  Start Chat
-                </button>
-              </div>
-            </div>
-          </Card>
-        </div>
-        
-      </div>
+        {isDynamicBackground && <AnimatedBackground />}
       
-      <button
-        onClick={() => setShowFeedbackModal(true)}
-        className="fixed bottom-5 right-5 w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-3xl shadow-lg hover:bg-purple-700 hover:scale-110 transition-all duration-300 z-40"
-        aria-label="Submit Feedback"
-      >
-        <FaEnvelope />
-      </button>
+        <div className="max-w-4xl mx-auto p-6 space-y-16 relative z-10">
+        
+            <div className="relative">
+                <div className="text-center pt-12 relative z-10">
+                    <div className="flex items-center justify-center gap-4 mb-8">
+                        <h1 className="text-7xl font-bold flex items-center justify-center gap-6">
+                            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                            Hi, {userProfile?.firstName || user.email.split('@')[0]}
+                            </span>
+                            <img 
+                                src="/profile.jpg" 
+                                alt="Sagar's profile" 
+                                className="profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover cursor-pointer hover:scale-105 transition-transform" 
+                                onClick={() => setIsSidebarOpen(true)} 
+                            />
+                        </h1>
+                    </div>
+                    <Card className="max-w-2xl mx-auto p-8 bg-gradient-to-r from-indigo-500 via-blue-500 to-purple-600 text-white relative">
+                        <div className="relative z-10">
+                            <FaQuoteLeft className="text-3xl opacity-75 mb-4 mx-auto" />
+                            <p className="text-xl font-medium mb-4 leading-relaxed">"The way to get started is to quit talking and begin doing."</p>
+                            <p className="text-sm opacity-90 font-medium">— Walt Disney</p>
+                        </div>
+                    </Card>
+                </div>
+            </div>
 
-      {/* Feedback Modal */}
-      {showFeedbackModal && user && (
-        <FeedbackModal userEmail={user.email} onClose={() => setShowFeedbackModal(false)} />
-      )}
-       </div>
+            {/* College & Life Section */}
+            <section>
+                <SectionHeader
+                    title="College & Life"
+                    icon={<FaCalendarAlt className="text-2xl text-blue-400" />}
+                    titleColor="text-blue-400"
+                >
+                </SectionHeader>
+                <div className="grid md:grid-cols-3 gap-6">
+                    <DashboardCard className="p-8" onClick={() => updateView('schedule', true)}>
+                    <div className="flex items-center gap-4">
+                        <FaCalendarAlt className="text-4xl text-blue-400" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">Schedule</h3>
+                        <p className="text-sm text-gray-400">View timetable</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+                    <DashboardCard className="p-8" onClick={() => updateView('attendance', true)}>
+                    <div className="flex items-center gap-4">
+                        <FaCheckCircle className="text-4xl text-green-400" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">Attendance</h3>
+                        <p className="text-sm text-gray-400">Track classes</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+                    <DashboardCard className="p-8" onClick={() => updateView('assignments', true)}>
+                    <div className="flex items-center gap-4">
+                        <FaTasks className="text-4xl text-purple-400" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">Assignments</h3>
+                        <p className="text-sm text-gray-400">Track pending tasks</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+                </div>
+            </section>
+
+            {/* Fitness Section */}
+            <section>
+                <SectionHeader
+                    title="Fitness"
+                    icon={<FaDumbbell className="text-2xl text-red-400" />}
+                    titleColor="text-red-400"
+                />
+                <div className="grid md:grid-cols-3 gap-6">
+                    <DashboardCard className="p-8" onClick={() => updateView('gym', true)}>
+                    <div className="flex items-center gap-4">
+                        <FaDumbbell className="text-4xl text-red-400" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">Gym Tracker</h3>
+                        <p className="text-sm text-gray-400">Log workouts</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+                    <DashboardCard className="p-8">
+                    <div className="flex items-center gap-4">
+                        <FaAppleAlt className="text-4xl text-green-400" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">Diet Tracker</h3>
+                        <p className="text-sm text-gray-400">Monitor nutrition</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+                    <DashboardCard className="p-8" onClick={() => updateView('grocery', true)}>
+                    <div className="flex items-center gap-4">
+                        <FaShoppingCart className="text-4xl text-orange-400" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">Grocery List</h3>
+                        <p className="text-sm text-gray-400">Plan shopping</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+                </div>
+            </section>
+
+            <section>
+                <SectionHeader
+                    title="Coding"
+                    icon={<FaCode className="text-2xl text-green-400" />}
+                    titleColor="text-green-400"
+                />
+                <div className="grid md:grid-cols-2 gap-6">
+                    
+                    <DashboardCard className="p-8" onClick={() => updateView('codeforcesProfile', true)}>
+                    <div className="flex items-center gap-4">
+                        <img src="/cf.jpg" alt="Codeforces Logo" className="w-10 h-10 object-contain rounded-md" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">Codeforces Stats</h3>
+                        <p className="text-sm text-gray-400">View detailed performance</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+
+                    <DashboardCard className="p-8" onClick={() => updateView('leetcodeProfile', true)}>
+                    <div className="flex items-center gap-4">
+                        <img src="/lc.jpg" alt="LeetCode Logo" className="w-10 h-10 object-contain rounded-md" />
+                        <div>
+                        <h3 className="font-semibold text-gray-200">LeetCode Stats</h3>
+                        <p className="text-sm text-gray-400">View detailed performance</p>
+                        </div>
+                    </div>
+                    </DashboardCard>
+
+                </div>
+            </section>
+        
+
+            <div className="space-y-6">
+                <Card className="p-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
+                    <div className="flex items-start gap-3">
+                    <FaQuoteLeft className="text-2xl opacity-75" />
+                    <div>
+                        <p className="text-lg font-medium">"Success is not final, failure is not fatal: it is the courage to continue that counts."</p>
+                        <p className="text-sm opacity-90 mt-2">— Winston Churchill</p>
+                    </div>
+                    </div>
+                </Card>
+                <Card onClick={() => updateView('chat', true)} className="p-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 relative">
+            
+                    <div className="relative z-10">
+                    <div className="flex items-center gap-4">
+                        <FaRobot className="text-3xl" />
+                        <div>
+                        <h3 className="font-semibold text-lg">Chat with AI Assistant</h3>
+                        <p className="text-sm opacity-90">Personalized help and guidance</p>
+                        </div>
+                        <button className="ml-auto px-6 py-3 bg-white text-orange-600 rounded-xl hover:bg-gray-100 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        Start Chat
+                        </button>
+                    </div>
+                    </div>
+                </Card>
+            </div>
+        
+        </div>
+      
+        <button
+            onClick={() => setShowFeedbackModal(true)}
+            className="fixed bottom-5 right-5 w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-3xl shadow-lg hover:bg-purple-700 hover:scale-110 transition-all duration-300 z-40"
+            aria-label="Submit Feedback"
+        >
+            <FaEnvelope />
+        </button>
+
+        {/* Feedback Modal */}
+        {showFeedbackModal && user && (
+            <FeedbackModal userEmail={user.email} onClose={() => setShowFeedbackModal(false)} />
+        )}
+    </div>
    
   );
 }

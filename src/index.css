@@ -951,7 +951,7 @@ th, td { text-align: left; padding: 0.75rem; }
 }
 .new-switch-container {
   position: absolute;
-  top: 3.3rem; /* A little gap from the top */
-  right: 27rem;  /* Aligned with the left content */
+  top: 0.5rem; /* A little gap from the top */
+  left: 1rem;  /* Aligned with the left content */
   z-index: 50; /* Ensure it's on top */
 }

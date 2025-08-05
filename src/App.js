@@ -11,7 +11,7 @@ import {
   FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt,
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart,
   FaChevronLeft, FaChevronRight, FaPlus, FaCheck, FaTimes, FaEdit,
-  FaCode, FaTasks, FaEnvelope, FaPaperPlane
+  FaCode, FaTasks, FaEnvelope, FaPaperPlane, FaPalette
 } from 'react-icons/fa';
 
 
@@ -699,6 +699,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDynamicBackground, setIsDynamicBackground] = useState(true);
 
   const [attendanceData, setAttendanceData] = useState({});
   const [gymData, setGymData] = useState({});
@@ -1386,7 +1387,15 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
   
   return (
     <div className="min-h-screen text-white relative">
-      <AnimatedBackground />
+      <button
+        onClick={() => setIsDynamicBackground(prev => !prev)}
+        className="fixed top-5 left-5 z-50 p-3 bg-gray-800 bg-opacity-50 rounded-full text-white hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+        aria-label="Toggle Background"
+        title="Toggle Dynamic Background"
+      >
+        <FaPalette />
+      </button>
+      {isDynamicBackground && <AnimatedBackground />}
       <div className="max-w-4xl mx-auto p-6 space-y-16 relative z-10">
         
         <div className="relative">

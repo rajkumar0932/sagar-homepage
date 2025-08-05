@@ -9,6 +9,7 @@ const Chat = ({ onClose }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef(null);
+  const [viewHeight, setViewHeight] = useState(window.innerHeight); // State for dynamic height
 
   const [history, setHistory] = useState([
     {
@@ -26,6 +27,33 @@ const Chat = ({ onClose }) => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history, isLoading]);
+
+  // Effect to handle viewport resizing for mobile keyboards
+  useEffect(() => {
+    const handleResize = () => {
+      // window.visualViewport.height is more reliable on mobile
+      const newHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      setViewHeight(newHeight);
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+    
+    // Initial height set
+    handleResize();
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -57,8 +85,8 @@ const Chat = ({ onClose }) => {
     <div className="min-h-screen text-white relative">
       <AnimatedBackground />
 
-      {/* This div structures the entire page vertically */}
-      <div className="relative z-10 h-screen flex flex-col">
+      {/* This div structures the entire page vertically with dynamic height */}
+      <div className="relative z-10 flex flex-col" style={{ height: viewHeight }}>
 
         {/* Header */}
         <header className="p-4 flex items-center bg-gray-900 bg-opacity-50 backdrop-blur-sm flex-shrink-0">

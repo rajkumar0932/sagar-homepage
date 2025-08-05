@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Chat from './chat';
-import { db, auth } from './firebase';
+// Import storage functions
+import { db, auth, storage } from './firebase'; 
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
-import Sidebar from './Sidebar'; // Import the new Sidebar component
+import Sidebar from './Sidebar'; 
 import './NewToggle.css'; 
 import {
   FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt,
@@ -705,8 +707,12 @@ function App() {
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDynamicBackground, setIsDynamicBackground] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
 
+  // --- NEW STATE FOR UPLOADING ---
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  
   const [attendanceData, setAttendanceData] = useState({});
   const [gymData, setGymData] = useState({});
   const [skinCareData, setSkinCareData] = useState({});
@@ -727,6 +733,47 @@ function App() {
     codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // --- NEW FUNCTION: HANDLE IMAGE UPLOAD ---
+  const handleProfileImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file || !user) return;
+
+    // Optional: Add file type/size validation
+    if (!file.type.includes('image')) {
+      alert('Please upload an image file.');
+      return;
+    }
+
+    const storageRef = ref(storage, `profile_images/${user.uid}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on('state_changed', 
+      (snapshot) => {
+        // Observe state change events such as progress, pause, and resume
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setUploadProgress(progress);
+        setIsUploading(true);
+      }, 
+      (error) => {
+        console.error("Upload failed:", error);
+        alert("Upload failed. Please try again.");
+        setIsUploading(false);
+      }, 
+      () => {
+        // Handle successful uploads on complete
+        getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+          // Update Firestore
+          const userDocRef = doc(db, "userData", user.uid);
+          await setDoc(userDocRef, { photoURL: downloadURL }, { merge: true });
+          
+          // Update local state to show new image immediately
+          setUserProfile(prev => ({...prev, photoURL: downloadURL }));
+          setIsUploading(false);
+        });
+      }
+    );
+  };
 
 useEffect(() => {
   const fetchCodingData = async () => {
@@ -806,10 +853,14 @@ useEffect(() => {
   useEffect(() => {
     if (isLoading || !user || !userProfile) return;
     
+    // This effect now specifically excludes photoURL updates to prevent re-writes during upload
+    const dataToSave = { ...userProfile };
+    delete dataToSave.photoURL; // Don't re-save the photoURL in this general effect
+
     const handler = setTimeout(() => {
       const saveData = async () => {
         await setDoc(doc(db, "userData", user.uid), {
-          ...userProfile,
+          ...dataToSave,
           attendanceData,
           gymData,
           skinCareData,
@@ -1396,9 +1447,13 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             onClose={() => setIsSidebarOpen(false)}
             userName={userProfile?.firstName || user.email.split('@')[0]}
             userEmail={user.email}
+            photoURL={userProfile?.photoURL}
+            onLogout={() => signOut(auth)}
             isDynamicBackground={isDynamicBackground}
             onToggleBackground={() => setIsDynamicBackground(p => !p)}
-            onLogout={() => signOut(auth)}
+            onImageUpload={handleProfileImageUpload}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
         />
 
         {isDynamicBackground && <AnimatedBackground />}
@@ -1413,8 +1468,8 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                             Hi, {userProfile?.firstName || user.email.split('@')[0]}
                             </span>
                             <img 
-                                src="/profile.jpg" 
-                                alt="Sagar's profile" 
+                                src={userProfile?.photoURL || "/profile.jpg"} 
+                                alt="Profile" 
                                 className="profile-image w-24 h-24 rounded-full border-6 border-purple-400 object-cover cursor-pointer hover:scale-105 transition-transform" 
                                 onClick={() => setIsSidebarOpen(true)} 
                             />

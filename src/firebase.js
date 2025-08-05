@@ -1,10 +1,11 @@
-// src/firebase.js
 
+
+
+// src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-
-// Your web app's Firebase configuration is now read from secure environment variables
+import { getStorage } from "firebase/storage"; // <-- ADD THIS LINE
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_API_KEY,
   authDomain: process.env.REACT_APP_AUTH_DOMAIN,
@@ -14,9 +15,10 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore and export it for use in your app
-export const db = getFirestore(app);
-export const auth = getAuth(app); // <-- Add this line
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app); // <-- ADD THIS LINE
+
+export { db, auth, storage }; // <-- ADD 'storage' TO EXPORTS

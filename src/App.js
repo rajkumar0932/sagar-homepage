@@ -1079,10 +1079,49 @@ useEffect(() => {
   const getCurrentDay = useCallback(() => new Date().toLocaleDateString('en-US', { weekday: 'long' }), []);
   
   const updateView = useCallback((viewName, value) => {
-    const newViews = { attendance: false, schedule: false, skinCare: false, gym: false, style: false, grocery: false, chat: false, coding: false, codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false };
-    newViews[viewName] = value;
-    setViews(newViews);
+    setViews(prevViews => {
+        const newViews = { ...prevViews };
+        for (const key in newViews) {
+            newViews[key] = false;
+        }
+        newViews[viewName] = value;
+        if (value) {
+            window.history.pushState({ view: viewName }, '', `/${viewName}`);
+        }
+        return newViews;
+    });
   }, []);
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const newViews = {
+        attendance: false, schedule: false, skinCare: false, gym: false,
+        style: false, grocery: false, chat: false, coding: false,
+        codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false
+      };
+      if (event.state && event.state.view) {
+        newViews[event.state.view] = true;
+      }
+      setViews(newViews);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Set initial state based on URL path
+    const path = window.location.pathname.substring(1);
+    if (path && views.hasOwnProperty(path)) {
+      updateView(path, true);
+    } else {
+      // If the path is not a valid view, go to the dashboard
+      window.history.replaceState({}, '', '/');
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once
+
 
   const markAttendance = useCallback((subject, present) => {
     setAttendanceData(prev => {
@@ -1139,11 +1178,11 @@ if (isLoading) {
     return <LoginPage />;
   }
   
-  if (views.chat) return <Chat onClose={() => updateView('chat', false)} />;
-  if (views.notifications) return <NotificationPage onClose={() => updateView('notifications', false)} settings={notificationSettings} onSave={setNotificationSettings} />;
-  if (views.assignments) return <AssignmentsPage onClose={() => updateView('assignments', false)} assignments={assignments} setAssignments={setAssignments} />;
+  if (views.chat) return <Chat onClose={() => window.history.back()} />;
+  if (views.notifications) return <NotificationPage onClose={() => window.history.back()} settings={notificationSettings} onSave={setNotificationSettings} />;
+  if (views.assignments) return <AssignmentsPage onClose={() => window.history.back()} assignments={assignments} setAssignments={setAssignments} />;
   if (views.coding) return <CodingDashboard
-    onClose={() => updateView('coding', false)}
+    onClose={() => window.history.back()}
     codingData={codingData}
     isLoading={isLoadingCodingData}
     isEditing={isEditingCodingData}
@@ -1152,8 +1191,8 @@ if (isLoading) {
     tempHandles={tempCodingHandles}
     setTempHandles={setTempCodingHandles}
   />;
-  if (views.codeforcesProfile) return <CodeforcesProfilePage onClose={() => updateView('codeforcesProfile', false)} />;
-  if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView('leetcodeProfile', false)} />;
+  if (views.codeforcesProfile) return <CodeforcesProfilePage onClose={() => window.history.back()} />;
+  if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => window.history.back()} />;
 
   if (views.attendance) {
     const subjects = Object.keys(attendanceData).sort();
@@ -1176,7 +1215,7 @@ if (isLoading) {
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-200">Attendance Tracker</h1>
               
-              <button onClick={() => updateView('attendance', false)} className="animated-back-btn">
+              <button onClick={() => window.history.back()} className="animated-back-btn">
                 <div className="back-sign"><svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg></div>
                 <div className="back-text">Back</div>
               </button>
@@ -1298,7 +1337,7 @@ if (isLoading) {
                     <span>Edit</span>
                 </button>
                 <button
-                    onClick={() => updateView('schedule', false)}
+                    onClick={() => window.history.back()}
                     className="animated-back-btn"
                 >
                     <div className="back-sign">
@@ -1399,7 +1438,7 @@ if (isLoading) {
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Gym Tracker</h1>
               <button
-                onClick={() => updateView('gym', false)}
+                onClick={() => window.history.back()}
                 className="animated-back-btn"
               >
                 <div className="back-sign">
@@ -1451,7 +1490,7 @@ if (isLoading) {
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Skincare Routine</h1>
               <button
-                onClick={() => updateView('skinCare', false)}
+                onClick={() => window.history.back()}
                 className="animated-back-btn"
               >
                 <div className="back-sign">
@@ -1503,7 +1542,7 @@ if (isLoading) {
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Style Guide</h1>
               <button
-                onClick={() => updateView('style', false)}
+                onClick={() => window.history.back()}
                 className="animated-back-btn"
               >
                 <div className="back-sign">
@@ -1563,7 +1602,7 @@ if (isLoading) {
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Grocery List</h1>
               <button
-                onClick={() => updateView('grocery', false)}
+                onClick={() => window.history.back()}
                 className="animated-back-btn"
               >
                 <div className="back-sign">

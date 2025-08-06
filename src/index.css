@@ -949,3 +949,51 @@ th, td { text-align: left; padding: 0.75rem; }
 .animated-logout-btn:active {
   transform: translate(2px, 2px);
 }
+.animated-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #4a5568;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.animated-edit-btn:hover {
+  background-color: #6b7280;
+  transform: translateY(-2px);
+}
+/* Add this to index.css for the smaller delete button */
+.animated-delete-btn-small {
+  background-color: #ef4444; /* red-500 */
+  color: white;
+  padding: 0.5rem;
+  border-radius: 9999px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.animated-delete-btn-small:hover {
+  background-color: #dc2626; /* red-600 */
+  transform: scale(1.1);
+}
+.animated-delete-btn-small .delete-svg-icon {
+  width: 12px;
+  height: 12px;
+}
+.animated-delete-btn-small .delete-svg-icon path {
+  fill: white;
+}
+/* Add to src/index.css */
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}

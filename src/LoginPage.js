@@ -35,10 +35,21 @@ const LoginPage = () => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        await setDoc(doc(db, "userData", user.uid), {
+       await setDoc(doc(db, "userData", user.uid), {
           firstName: firstName,
           lastName: lastName,
           email: user.email,
+          isDynamicBackground: true, // Add default background preference
+          schedule: [ // Add default schedule
+            { time: '9:00-10', monday: 'EIM(SB)', tuesday: 'DSP(SRC)', wednesday: 'EIM(SB)', thursday: 'ADC(TM)', friday: 'MPMC' },
+            { time: '10:00-11', monday: 'DSP(SRC)', tuesday: 'EIM(SB)', wednesday: 'IM(BI)', thursday: 'MPMC', friday: 'ADC(TM)' },
+            { time: '11:00-12', monday: 'ADC(TM)', tuesday: 'IM(ABC)', wednesday: 'MPMC LAB', thursday: 'DSP', friday: 'EIM LAB' },
+            { time: '12:00-1', monday: 'IM(ABC)', tuesday: 'MPMC', wednesday: 'MPMC LAB', thursday: 'BREAK', friday: 'EIM LAB' },
+            { time: '1:00-2', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' },
+            { time: '2:00-3', monday: 'MPMC', tuesday: 'DSP LAB', wednesday: 'DSP(SRC)', thursday: 'ADC LAB', friday: 'EIM(SB)' },
+            { time: '3:00-4', monday: 'Mini Project', tuesday: 'DSP LAB', wednesday: 'ADC(TM)', thursday: 'ADC LAB', friday: 'BREAK' },
+            { time: '4:00-5', monday: 'Mini Project', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' }
+          ],
           attendanceData: {
             'EIM(SB)': { attended: 0, total: 0 }, 'DSP(SRC)': { attended: 0, total: 0 },
             'ADC(TM)': { attended: 0, total: 0 }, 'IM(ABC)': { attended: 0, total: 0 },
@@ -46,7 +57,9 @@ const LoginPage = () => {
           },
           gymData: { streak: 0, calendar: {} },
           skinCareData: { streak: 0, calendar: {} },
-          groceryList: []
+          groceryList: [],
+          assignments: [],
+          notificationSettings: {},
         });
       } catch (err) {
         if (err.code === 'auth/email-already-in-use') {

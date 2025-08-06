@@ -1,15 +1,13 @@
-// src/App.js
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Chat from './chat';
-// Import storage functions
 import { db, auth, storage } from './firebase'; 
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore"; 
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
 import Sidebar from './Sidebar'; 
+import Modal from './Modal'; // Import the new Modal component
 import './NewToggle.css'; 
 import {
   FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt,
@@ -46,10 +44,11 @@ const SectionHeader = ({ title, icon, titleColor = 'text-gray-200', children }) 
         {children}
     </div>
 );
+
 const FeedbackModal = ({ userEmail, onClose }) => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [status, setStatus] = useState({ state: 'idle', text: '' }); // idle, sending, success, error
+  const [status, setStatus] = useState({ state: 'idle', text: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,16 +68,12 @@ const FeedbackModal = ({ userEmail, onClose }) => {
           message
         })
       });
- // recheck
-      // Add specific check for 404 error
       if (response.status === 404) {
-        console.error("Frontend Error: The API endpoint '/api/send-feedback' was not found. Make sure the file 'api/send-feedback.js' exists and the server is running correctly.");
         throw new Error('API endpoint not found. Check server logs.');
       }
 
       const data = await response.json();
       if (!response.ok) {
-        console.error("API Error Response:", data);
         throw new Error(data.error || 'Failed to send feedback.');
       }
       
@@ -88,7 +83,6 @@ const FeedbackModal = ({ userEmail, onClose }) => {
       }, 2000);
 
     } catch (error) {
-      console.error("Full error in handleSubmit:", error);
       setStatus({ state: 'error', text: error.message });
     }
   };
@@ -138,9 +132,6 @@ const FeedbackModal = ({ userEmail, onClose }) => {
   );
 };
 
-
-
-// --- New Assignments Page Component ---
 const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
   const [newAssignment, setNewAssignment] = useState({ title: '', subject: '', deadline: '' });
 
@@ -249,7 +240,6 @@ const AssignmentsPage = ({ onClose, assignments, setAssignments }) => {
   );
 };
 
-
 const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }) => {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const year = currentMonth.getFullYear();
@@ -325,7 +315,6 @@ const CalendarView = ({ calendarData, onMarkDay, currentMonth, setCurrentMonth }
     </div>
   );
 };
-
 
 const NotificationPage = ({ onClose, settings, onSave }) => {
   const [localSettings, setLocalSettings] = useState(settings || {
@@ -439,7 +428,6 @@ const NotificationPage = ({ onClose, settings, onSave }) => {
   );
 };
 
-
 const CodingDashboard = ({ onClose, codingData, isLoading, isEditing, onEdit, onSave, tempHandles, setTempHandles }) => {
   const platforms = [
     { key: 'leetcode', name: 'LeetCode', color: 'text-yellow-400', icon: '/lc.jpg' },
@@ -531,7 +519,6 @@ const CodeforcesProfilePage = ({ onClose }) => {
       }
       setStats(data);
     } catch (err) {
-      console.error("Error during fetch:", err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -604,6 +591,7 @@ const CodeforcesProfilePage = ({ onClose }) => {
     </div>
   );
 };
+
 const LeetCodeProfilePage = ({ onClose }) => {
   const [handle, setHandle] = useState('');
   const [stats, setStats] = useState(null);
@@ -627,7 +615,6 @@ const LeetCodeProfilePage = ({ onClose }) => {
       }
       setStats(data);
     } catch (err) {
-      console.error("Error during fetch:", err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -688,6 +675,7 @@ const LeetCodeProfilePage = ({ onClose }) => {
     </div>
   );
 };
+
 function App() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const handleEditCodingHandles = () => {
@@ -709,7 +697,6 @@ function App() {
   const [isDynamicBackground, setIsDynamicBackground] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
 
-  // --- NEW STATE FOR UPLOADING ---
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
@@ -726,6 +713,9 @@ function App() {
   const [tempCodingHandles, setTempCodingHandles] = useState({ codeforces: '', leetcode: '', codechef: '' });
 
   const [editingSubject, setEditingSubject] = useState(null);
+  const [editingSubjectName, setEditingSubjectName] = useState({ oldName: '', newName: '' });
+  const [newSubjectName, setNewSubjectName] = useState('');
+
   const [newGroceryItem, setNewGroceryItem] = useState('');
   const [views, setViews] = useState({
     attendance: false, schedule: false, skinCare: false, gym: false,
@@ -734,12 +724,36 @@ function App() {
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // --- NEW FUNCTION: HANDLE IMAGE UPLOAD ---
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: '',
+    children: null,
+    onConfirm: () => {},
+    type: 'alert',
+    confirmText: 'Confirm',
+    confirmColor: 'bg-red-600'
+  });
+
+  const openModal = ({ title, children, onConfirm, type, confirmText, confirmColor }) => {
+    setModalState({
+      isOpen: true,
+      title,
+      children,
+      onConfirm,
+      type,
+      confirmText,
+      confirmColor
+    });
+  };
+
+  const closeModal = () => {
+    setModalState({ isOpen: false, title: '', children: null, onConfirm: () => {}, type: 'alert' });
+  };
+
   const handleProfileImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file || !user) return;
 
-    // Optional: Add file type/size validation
     if (!file.type.includes('image')) {
       alert('Please upload an image file.');
       return;
@@ -750,7 +764,6 @@ function App() {
 
     uploadTask.on('state_changed', 
       (snapshot) => {
-        // Observe state change events such as progress, pause, and resume
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setUploadProgress(progress);
         setIsUploading(true);
@@ -761,13 +774,10 @@ function App() {
         setIsUploading(false);
       }, 
       () => {
-        // Handle successful uploads on complete
         getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
-          // Update Firestore
           const userDocRef = doc(db, "userData", user.uid);
           await setDoc(userDocRef, { photoURL: downloadURL }, { merge: true });
           
-          // Update local state to show new image immediately
           setUserProfile(prev => ({...prev, photoURL: downloadURL }));
           setIsUploading(false);
         });
@@ -814,15 +824,47 @@ useEffect(() => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (!currentUser) setIsLoading(false);
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+        setSchedule([
+            { time: '9:00-10', monday: 'EIM(SB)', tuesday: 'DSP(SRC)', wednesday: 'EIM(SB)', thursday: 'ADC(TM)', friday: 'MPMC' },
+            { time: '10:00-11', monday: 'DSP(SRC)', tuesday: 'EIM(SB)', wednesday: 'IM(BI)', thursday: 'MPMC', friday: 'ADC(TM)' },
+            { time: '11:00-12', monday: 'ADC(TM)', tuesday: 'IM(ABC)', wednesday: 'MPMC LAB', thursday: 'DSP', friday: 'EIM LAB' },
+            { time: '12:00-1', monday: 'IM(ABC)', tuesday: 'MPMC', wednesday: 'MPMC LAB', thursday: 'BREAK', friday: 'EIM LAB' },
+            { time: '1:00-2', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' },
+            { time: '2:00-3', monday: 'MPMC', tuesday: 'DSP LAB', wednesday: 'DSP(SRC)', thursday: 'ADC LAB', friday: 'EIM(SB)' },
+            { time: '3:00-4', monday: 'Mini Project', tuesday: 'DSP LAB', wednesday: 'ADC(TM)', thursday: 'ADC LAB', friday: 'BREAK' },
+            { time: '4:00-5', monday: 'Mini Project', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' }
+        ]);
+        setAttendanceData({});
+        setGymData({});
+        setSkinCareData({});
+        setGroceryList([]);
+        setAssignments([]);
+        setNotificationSettings({});
+        setIsDynamicBackground(true);
+        setIsLoading(false);
+      }
     });
     return () => unsubscribe();
   }, []);
 
+  const [schedule, setSchedule] = useState([
+    { time: '9:00-10', monday: 'EIM(SB)', tuesday: 'DSP(SRC)', wednesday: 'EIM(SB)', thursday: 'ADC(TM)', friday: 'MPMC' },
+    { time: '10:00-11', monday: 'DSP(SRC)', tuesday: 'EIM(SB)', wednesday: 'IM(BI)', thursday: 'MPMC', friday: 'ADC(TM)' },
+    { time: '11:00-12', monday: 'ADC(TM)', tuesday: 'IM(ABC)', wednesday: 'MPMC LAB', thursday: 'DSP', friday: 'EIM LAB' },
+    { time: '12:00-1', monday: 'IM(ABC)', tuesday: 'MPMC', wednesday: 'MPMC LAB', thursday: 'BREAK', friday: 'EIM LAB' },
+    { time: '1:00-2', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' },
+    { time: '2:00-3', monday: 'MPMC', tuesday: 'DSP LAB', wednesday: 'DSP(SRC)', thursday: 'ADC LAB', friday: 'EIM(SB)' },
+    { time: '3:00-4', monday: 'Mini Project', tuesday: 'DSP LAB', wednesday: 'ADC(TM)', thursday: 'ADC LAB', friday: 'BREAK' },
+    { time: '4:00-5', monday: 'Mini Project', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' }
+  ]);
+
   useEffect(() => {
     if (!user) {
-      setUserProfile(null);
       return;
     }
     
@@ -841,9 +883,31 @@ useEffect(() => {
         setAssignments(data.assignments || []);
         setNotificationSettings(data.notificationSettings || { phoneNumber: '', email: '', labNotify: false, contestNotify: false, notifyMinutesBefore: 15 });
         setCodingData(data.codingData || { leetcode: { solved: '0', rating: '0' }, codeforces: { solved: '0', rating: '0' }, codechef: { solved: '0', rating: '0' } });
+        if (data.schedule) {
+            setSchedule(data.schedule);
+        }
+        setIsDynamicBackground(data.isDynamicBackground !== undefined ? data.isDynamicBackground : true);
       } else {
-        console.log("User document not found for this user. This might happen right after sign-up before the doc is created.");
-        setUserProfile({ firstName: user.email.split('@')[0] });
+        const defaultSchedule = [
+            { time: '9:00-10', monday: 'EIM(SB)', tuesday: 'DSP(SRC)', wednesday: 'EIM(SB)', thursday: 'ADC(TM)', friday: 'MPMC' },
+            { time: '10:00-11', monday: 'DSP(SRC)', tuesday: 'EIM(SB)', wednesday: 'IM(BI)', thursday: 'MPMC', friday: 'ADC(TM)' },
+            { time: '11:00-12', monday: 'ADC(TM)', tuesday: 'IM(ABC)', wednesday: 'MPMC LAB', thursday: 'DSP', friday: 'EIM LAB' },
+            { time: '12:00-1', monday: 'IM(ABC)', tuesday: 'MPMC', wednesday: 'MPMC LAB', thursday: 'BREAK', friday: 'EIM LAB' },
+            { time: '1:00-2', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' },
+            { time: '2:00-3', monday: 'MPMC', tuesday: 'DSP LAB', wednesday: 'DSP(SRC)', thursday: 'ADC LAB', friday: 'EIM(SB)' },
+            { time: '3:00-4', monday: 'Mini Project', tuesday: 'DSP LAB', wednesday: 'ADC(TM)', thursday: 'ADC LAB', friday: 'BREAK' },
+            { time: '4:00-5', monday: 'Mini Project', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' }
+        ];
+        const newUserProfile = { 
+            firstName: user.email.split('@')[0],
+            email: user.email,
+            schedule: defaultSchedule,
+            isDynamicBackground: true
+        };
+        await setDoc(docRef, newUserProfile);
+        setUserProfile(newUserProfile);
+        setSchedule(defaultSchedule);
+        setIsDynamicBackground(true);
       }
       setIsLoading(false);
     };
@@ -853,9 +917,8 @@ useEffect(() => {
   useEffect(() => {
     if (isLoading || !user || !userProfile) return;
     
-    // This effect now specifically excludes photoURL updates to prevent re-writes during upload
     const dataToSave = { ...userProfile };
-    delete dataToSave.photoURL; // Don't re-save the photoURL in this general effect
+    delete dataToSave.photoURL; 
 
     const handler = setTimeout(() => {
       const saveData = async () => {
@@ -868,25 +931,96 @@ useEffect(() => {
           assignments,
           codingData,
           notificationSettings,
+          schedule,
+          isDynamicBackground,
         }, { merge: true });
       };
       saveData();
     }, 1500);
 
     return () => clearTimeout(handler);
-  }, [attendanceData, gymData, skinCareData, groceryList, assignments, userProfile, user, isLoading, codingData, notificationSettings]);
+  }, [attendanceData, gymData, skinCareData, groceryList, assignments, userProfile, user, isLoading, codingData, notificationSettings, schedule, isDynamicBackground]);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [tempSchedule, setTempSchedule] = useState(schedule);
+
+  const handleScheduleChange = (rowIndex, day, value) => {
+      const updatedSchedule = [...tempSchedule];
+      updatedSchedule[rowIndex][day] = value;
+      setTempSchedule(updatedSchedule);
+  };
+
+  const openEditModal = () => {
+      setTempSchedule(JSON.parse(JSON.stringify(schedule)));
+      setIsEditModalOpen(true);
+  };
+
+  const saveSchedule = () => {
+      setSchedule(tempSchedule);
+      setIsEditModalOpen(false);
+  };
+
+  const addSubject = () => {
+      if (newSubjectName.trim() && !attendanceData[newSubjectName.trim()]) {
+        setAttendanceData(prev => ({
+          ...prev,
+          [newSubjectName.trim()]: { attended: 0, total: 0 }
+        }));
+        setNewSubjectName('');
+      }
+    };
+
+  const deleteSubject = (subject) => {
+      openModal({
+        title: 'Confirm Deletion',
+        type: 'confirmation',
+        children: <p>Are you sure you want to delete "<strong>{subject}</strong>"? This action cannot be undone.</p>,
+        onConfirm: () => {
+          setAttendanceData(prev => {
+            const newState = { ...prev };
+            delete newState[subject];
+            return newState;
+          });
+          closeModal();
+        },
+        confirmText: 'Delete',
+        confirmColor: 'bg-red-600 hover:bg-red-700'
+      });
+  };
+
+  const handleRenameSubject = () => {
+    const { oldName, newName } = editingSubjectName;
+    if (newName && newName !== oldName && !attendanceData[newName]) {
+      setAttendanceData(prev => {
+        const { [oldName]: value, ...rest } = prev;
+        return {
+          ...rest,
+          [newName]: value
+        };
+      });
+    }
+    setEditingSubjectName({ oldName: '', newName: '' });
+  };
+
+  const handleToggleBackground = () => {
+    if (!isDynamicBackground) {
+        openModal({
+            title: 'Performance Warning',
+            type: 'confirmation',
+            confirmText: 'Proceed',
+            confirmColor: 'bg-purple-600 hover:bg-purple-700',
+            children: <p>Enabling the animated background may cause lag or use more battery on some devices. Do you want to proceed?</p>,
+            onConfirm: () => {
+                setIsDynamicBackground(true);
+                closeModal();
+            }
+        });
+    } else {
+        setIsDynamicBackground(false);
+    }
+  };
 
   const staticData = useMemo(() => ({
-    schedule: [
-        { time: '9:00-10', monday: 'EIM(SB)', tuesday: 'DSP(SRC)', wednesday: 'EIM(SB)', thursday: 'ADC(TM)', friday: 'MPMC' },
-        { time: '10:00-11', monday: 'DSP(SRC)', tuesday: 'EIM(SB)', wednesday: 'IM(BI)', thursday: 'MPMC', friday: 'ADC(TM)' },
-        { time: '11:00-12', monday: 'ADC(TM)', tuesday: 'IM(ABC)', wednesday: 'MPMC LAB', thursday: 'DSP', friday: 'EIM LAB' },
-        { time: '12:00-1', monday: 'IM(ABC)', tuesday: 'MPMC', wednesday: 'MPMC LAB', thursday: 'BREAK', friday: 'EIM LAB' },
-        { time: '1:00-2', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' },
-        { time: '2:00-3', monday: 'MPMC', tuesday: 'DSP LAB', wednesday: 'DSP(SRC)', thursday: 'ADC LAB', friday: 'EIM(SB)' },
-        { time: '3:00-4', monday: 'Mini Project', tuesday: 'DSP LAB', wednesday: 'ADC(TM)', thursday: 'ADC LAB', friday: 'BREAK' },
-        { time: '4:00-5', monday: 'Mini Project', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' }
-    ],
     skinCareRoutine: {
       Monday: { morning: 'Vitamin C + Hyaluronic Acid + Niacinamide + SPF', night: 'Retinol (buffered) + Hyaluronic Acid + Moisturizer', notes: 'Pigmentation + anti-aging' },
       Tuesday: { morning: 'Niacinamide + Hyaluronic Acid + SPF', night: 'Salicylic Acid (2%) + Hyaluronic Acid + Light Moisturizer', notes: 'Oil/acne focus' },
@@ -1005,143 +1139,142 @@ if (isLoading) {
     return <LoginPage />;
   }
   
-  // --- Conditional Rendering for Views ---
-  
   if (views.chat) return <Chat onClose={() => updateView('chat', false)} />;
   if (views.notifications) return <NotificationPage onClose={() => updateView('notifications', false)} settings={notificationSettings} onSave={setNotificationSettings} />;
   if (views.assignments) return <AssignmentsPage onClose={() => updateView('assignments', false)} assignments={assignments} setAssignments={setAssignments} />;
   if (views.coding) return <CodingDashboard
-  onClose={() => updateView('coding', false)}
-  codingData={codingData}
-  isLoading={isLoadingCodingData}
-  isEditing={isEditingCodingData}
-  onEdit={handleEditCodingHandles}
-  onSave={handleSaveCodingHandles}
-  tempHandles={tempCodingHandles}
-  setTempHandles={setTempCodingHandles}
-/>;
-if (views.codeforcesProfile) return <CodeforcesProfilePage onClose={() => updateView('codeforcesProfile', false)} />;
-if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView('leetcodeProfile', false)} />;
+    onClose={() => updateView('coding', false)}
+    codingData={codingData}
+    isLoading={isLoadingCodingData}
+    isEditing={isEditingCodingData}
+    onEdit={handleEditCodingHandles}
+    onSave={handleSaveCodingHandles}
+    tempHandles={tempCodingHandles}
+    setTempHandles={setTempCodingHandles}
+  />;
+  if (views.codeforcesProfile) return <CodeforcesProfilePage onClose={() => updateView('codeforcesProfile', false)} />;
+  if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView('leetcodeProfile', false)} />;
 
   if (views.attendance) {
-    const warningSubjects = Object.keys(attendanceData).filter(subject => getAttendancePercentage(subject) < 75);
-    const safeSubjects = Object.keys(attendanceData).filter(subject => getAttendancePercentage(subject) >= 75);
+    const subjects = Object.keys(attendanceData).sort();
     return (
       <div className="min-h-screen p-6 text-white relative">
+        <Modal 
+            isOpen={modalState.isOpen}
+            onClose={closeModal}
+            onConfirm={modalState.onConfirm}
+            title={modalState.title}
+            type={modalState.type}
+            confirmText={modalState.confirmText}
+            confirmColor={modalState.confirmColor}
+        >
+            {modalState.children}
+        </Modal>
         <AnimatedBackground />
         <div className="relative z-10">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-200">Attendance Tracker</h1>
               
-<button
-  onClick={() => updateView('attendance', false)}
-  className="animated-back-btn"
->
-  <div className="back-sign">
-    <svg viewBox="0 0 512 512">
-      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
-    </svg>
-  </div>
-  <div className="back-text">Back</div>
-</button>
+              <button onClick={() => updateView('attendance', false)} className="animated-back-btn">
+                <div className="back-sign"><svg viewBox="0 0 512 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path></svg></div>
+                <div className="back-text">Back</div>
+              </button>
             </div>
-            {warningSubjects.length > 0 && (
-              <section className="mb-10">
-                <h2 className="text-xl font-semibold text-red-400 mb-4">Needs Attention</h2>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {warningSubjects.map(subject => {
-                    const data = attendanceData[subject];
-                    const percentage = getAttendancePercentage(subject);
-                    return (
-                      <Card key={subject} className="p-6 space-y-3 bg-gray-800 text-gray-300">
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-xl font-semibold text-gray-200">{subject}</h3>
-                          <div className="flex items-center gap-2 text-red-100 bg-red-500 bg-opacity-50 px-3 py-1 rounded-full">
-                            <FaExclamationTriangle />
-                            <span className="font-bold text-sm">{percentage}%</span>
-                          </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+                <Card className="p-6 space-y-3 bg-gray-800 text-gray-300">
+                    <h3 className="text-xl font-semibold text-gray-200">Add New Subject</h3>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={newSubjectName}
+                            onChange={(e) => setNewSubjectName(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && addSubject()}
+                            placeholder="Enter subject name..."
+                            className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <button onClick={addSubject} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"><FaPlus /></button>
+                    </div>
+                </Card>
+
+              {subjects.map(subject => {
+                const data = attendanceData[subject];
+                const percentage = getAttendancePercentage(subject);
+                const isWarning = percentage < 75;
+                const color = isWarning ? 'red' : (percentage >= 85 ? 'green' : 'yellow');
+                const isEditingName = editingSubjectName.oldName === subject;
+
+                return (
+                  <Card key={subject} className="p-6 space-y-3 bg-gray-800 text-gray-300">
+                    <div className="flex justify-between items-start">
+                      {isEditingName ? (
+                        <div className="flex-1 flex gap-2 items-center">
+                            <input
+                                type="text"
+                                value={editingSubjectName.newName}
+                                onChange={(e) => setEditingSubjectName(prev => ({ ...prev, newName: e.target.value }))}
+                                onKeyPress={(e) => e.key === 'Enter' && handleRenameSubject()}
+                                autoFocus
+                                className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button onClick={handleRenameSubject} className="icon-button-green"><FaCheck /></button>
+                            <button onClick={() => setEditingSubjectName({ oldName: '', newName: '' })} className="icon-button-red"><FaTimes /></button>
                         </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2.5">
-                          <div className="bg-red-500 h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                      ) : (
+                        <h3 className="text-xl font-semibold text-gray-200 flex items-center gap-2">
+                          {subject}
+                          <button 
+                            onClick={() => setEditingSubjectName({ oldName: subject, newName: subject })} 
+                            className="text-gray-500 hover:text-white transition-colors">
+                              <FaEdit size="14"/>
+                          </button>
+                        </h3>
+                      )}
+                      
+                      <div className={`flex items-center gap-2 text-${color}-100 bg-${color}-500 bg-opacity-50 px-3 py-1 rounded-full text-sm font-bold`}>
+                        {isWarning && <FaExclamationTriangle />}
+                        <span>{percentage}%</span>
+                      </div>
+                    </div>
+                    
+                    <div className="w-full bg-gray-700 rounded-full h-2.5">
+                      <div className={`bg-${color}-500 h-2.5 rounded-full`} style={{ width: `${percentage}%` }}></div>
+                    </div>
+                    <div className="text-xs text-gray-500">{data.attended} / {data.total} classes attended</div>
+                    
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => markAttendance(subject, true)} className="icon-button-green"><FaCheck /></button>
+                        <button onClick={() => markAttendance(subject, false)} className="icon-button-red"><FaTimes /></button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <button onClick={() => setEditingSubject(editingSubject === subject ? null : subject)} className="icon-button-gray"><FaEdit /></button>
+                         <button onClick={() => deleteSubject(subject)} className="animated-delete-btn-small">
+                            <svg viewBox="0 0 448 512" className="delete-svg-icon"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {editingSubject === subject && (
+                      <div className="border-t border-gray-700 pt-3 space-y-2">
+                        <div className="text-xs text-gray-500">Manual Correction:</div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: prev[subject].total + 1 }}))} className="flex-1 edit-button">+</button>
+                          <span className="flex-1 text-center text-sm text-gray-300">Total: {data.total}</span>
+                          <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: Math.max(1, prev[subject].total - 1), attended: Math.min(prev[subject].attended, Math.max(1, prev[subject].total - 1)) }}))} className="flex-1 edit-button">-</button>
                         </div>
-                        <div className="text-xs text-gray-500">{data.attended} / {data.total} classes attended</div>
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex items-center gap-3">
-                            <button onClick={() => markAttendance(subject, true)} className="icon-button-green"><FaCheck /></button>
-                            <button onClick={() => markAttendance(subject, false)} className="icon-button-red"><FaTimes /></button>
-                          </div>
-                          <button onClick={() => setEditingSubject(editingSubject === subject ? null : subject)} className="icon-button-gray"><FaEdit /></button>
+                        <div className="flex gap-2">
+                          <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.min(data.total, prev[subject].attended + 1) }}))} className="flex-1 edit-button">+</button>
+                          <span className="flex-1 text-center text-sm text-gray-300">Attended: {data.attended}</span>
+                          <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.max(0, prev[subject].attended - 1) }}))} className="flex-1 edit-button">-</button>
                         </div>
-                        {editingSubject === subject && (
-                          <div className="border-t border-gray-700 pt-3 space-y-2">
-                            <div className="text-xs text-gray-500">Manual Correction:</div>
-                            <div className="flex gap-2">
-                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: prev[subject].total + 1 }}))} className="flex-1 edit-button">+</button>
-                              <span className="flex-1 text-center text-sm text-gray-300">Total: {data.total}</span>
-                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: Math.max(1, prev[subject].total - 1), attended: Math.min(prev[subject].attended, Math.max(1, prev[subject].total - 1)) }}))} className="flex-1 edit-button">-</button>
-                            </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.min(data.total, prev[subject].attended + 1) }}))} className="flex-1 edit-button">+</button>
-                              <span className="flex-1 text-center text-sm text-gray-300">Attended: {data.attended}</span>
-                              <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.max(0, prev[subject].attended - 1) }}))} className="flex-1 edit-button">-</button>
-                            </div>
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-            {safeSubjects.length > 0 && (
-              <section>
-                <h2 className="text-xl font-semibold text-green-400 mb-4">On Track</h2>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {safeSubjects.map(subject => {
-                    const data = attendanceData[subject];
-                    const percentage = getAttendancePercentage(subject);
-                    const color = percentage >= 85 ? 'green' : 'yellow';
-                    return (
-                      <Card key={subject} className="p-6 space-y-3 bg-gray-800 text-gray-300">
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-xl font-semibold text-gray-200">{subject}</h3>
-                          <div className={`flex items-center gap-2 text-${color}-100 bg-${color}-500 bg-opacity-50 px-3 py-1 rounded-full`}>
-                            <span className="font-bold text-sm">{percentage}%</span>
-                          </div>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2.5">
-                          <div className={`bg-${color}-500 h-2.5 rounded-full`} style={{ width: `${percentage}%` }}></div>
-                        </div>
-                        <div className="text-xs text-gray-500">{data.attended} / {data.total} classes attended</div>
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex items-center gap-3">
-                            <button onClick={() => markAttendance(subject, true)} className="icon-button-green"><FaCheck /></button>
-                            <button onClick={() => markAttendance(subject, false)} className="icon-button-red"><FaTimes /></button>
-                          </div>
-                          <button onClick={() => setEditingSubject(editingSubject === subject ? null : subject)} className="icon-button-gray"><FaEdit /></button>
-                        </div>
-                         {editingSubject === subject && (
-                            <div className="border-t border-gray-700 pt-3 space-y-2">
-                              <div className="text-xs text-gray-500">Manual Correction:</div>
-                               <div className="flex gap-2">
-                                <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: prev[subject].total + 1 }}))} className="flex-1 edit-button">+</button>
-                                <span className="flex-1 text-center text-sm text-gray-300">Total: {data.total}</span>
-                                <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], total: Math.max(1, prev[subject].total - 1), attended: Math.min(prev[subject].attended, Math.max(1, prev[subject].total - 1)) }}))} className="flex-1 edit-button">-</button>
-                              </div>
-                              <div className="flex gap-2">
-                                <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.min(data.total, prev[subject].attended + 1) }}))} className="flex-1 edit-button">+</button>
-                                <span className="flex-1 text-center text-sm text-gray-300">Attended: {data.attended}</span>
-                                <button onClick={() => setAttendanceData(prev => ({...prev, [subject]: { ...prev[subject], attended: Math.max(0, prev[subject].attended - 1) }}))} className="flex-1 edit-button">-</button>
-                              </div>
-                            </div>
-                          )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -1156,17 +1289,26 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Class Schedule</h1>
-              <button
-  onClick={() => updateView('schedule', false)}
-  className="animated-back-btn"
->
-  <div className="back-sign">
-    <svg viewBox="0 0 512 512">
-      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
-    </svg>
-  </div>
-  <div className="back-text">Back</div>
-</button>
+              <div>
+                <button
+                    onClick={openEditModal}
+                    className="animated-edit-btn"
+                >
+                    <FaEdit />
+                    <span>Edit</span>
+                </button>
+                <button
+                    onClick={() => updateView('schedule', false)}
+                    className="animated-back-btn"
+                >
+                    <div className="back-sign">
+                        <svg viewBox="0 0 512 512">
+                            <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+                        </svg>
+                    </div>
+                    <div className="back-text">Back</div>
+                </button>
+              </div>
             </div>
             <Card className="p-6 overflow-x-auto stylish-schedule-bg bg-gray-800">
               <div className="min-w-full">
@@ -1182,7 +1324,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                     </tr>
                   </thead>
                   <tbody>
-                    {staticData.schedule.map((row, index) => (
+                    {schedule.map((row, index) => (
                       <tr key={index}>
                         <td className="p-4 font-semibold text-gray-200 sticky left-0 z-10 bg-gray-800 stabilize">{row.time}</td>
                         <td className="p-4 text-center bg-gray-800"><span className={`inline-block px-3 py-2 rounded-lg text-sm font-medium w-full ${getSubjectColor(row.monday)}`}>{row.monday}</span></td>
@@ -1198,9 +1340,55 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             </Card>
           </div>
         </div>
+        {isEditModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+                <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl p-8 relative border border-gray-700">
+                    <h2 className="text-2xl font-bold text-gray-100 mb-6">Edit Schedule</h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-separate border-spacing-2">
+                            <thead>
+                                <tr>
+                                    <th className="p-2 text-left font-semibold text-gray-200">Time</th>
+                                    <th className="p-2 text-center font-semibold text-gray-200">Monday</th>
+                                    <th className="p-2 text-center font-semibold text-gray-200">Tuesday</th>
+                                    <th className="p-2 text-center font-semibold text-gray-200">Wednesday</th>
+                                    <th className="p-2 text-center font-semibold text-gray-200">Thursday</th>
+                                    <th className="p-2 text-center font-semibold text-gray-200">Friday</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tempSchedule.map((row, rowIndex) => (
+                                    <tr key={rowIndex}>
+                                        <td className="p-2 font-semibold text-gray-200">{row.time}</td>
+                                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].map(day => (
+                                            <td key={day} className="p-1">
+                                                <input
+                                                    type="text"
+                                                    value={row[day]}
+                                                    onChange={(e) => handleScheduleChange(rowIndex, day, e.target.value)}
+                                                    className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                />
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="flex justify-end items-center gap-4 mt-6">
+                        <button onClick={() => setIsEditModalOpen(false)} className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors font-semibold">
+                            Cancel
+                        </button>
+                        <button onClick={saveSchedule} className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
     );
-  }
+}
 
   if (views.gym) {
     return (
@@ -1211,17 +1399,16 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Gym Tracker</h1>
               <button
-  onClick={() => updateView('gym', false)}
-  className="animated-back-btn"
->
-  <div className="back-sign">
-    <svg viewBox="0 0 512 512">
-      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
-    </svg>
-  </div>
-  <div className="back-text">Back</div>
-</button>
-
+                onClick={() => updateView('gym', false)}
+                className="animated-back-btn"
+              >
+                <div className="back-sign">
+                  <svg viewBox="0 0 512 512">
+                    <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+                  </svg>
+                </div>
+                <div className="back-text">Back</div>
+              </button>
             </div>
             <Card className="p-6 mb-6 bg-gradient-to-r from-red-500 to-orange-500 text-white">
               <div className="flex items-center gap-3">
@@ -1264,16 +1451,16 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Skincare Routine</h1>
               <button
-  onClick={() => updateView('skinCare', false)}
-  className="animated-back-btn"
->
-  <div className="back-sign">
-    <svg viewBox="0 0 512 512">
-      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
-    </svg>
-  </div>
-  <div className="back-text">Back</div>
-</button>
+                onClick={() => updateView('skinCare', false)}
+                className="animated-back-btn"
+              >
+                <div className="back-sign">
+                  <svg viewBox="0 0 512 512">
+                    <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+                  </svg>
+                </div>
+                <div className="back-text">Back</div>
+              </button>
             </div>
             <Card className="p-6 mb-6 bg-gradient-to-r from-pink-500 to-purple-500 text-white">
               <div className="flex items-center gap-3">
@@ -1316,21 +1503,20 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Style Guide</h1>
               <button
-  onClick={() => updateView('style', false)}
-  className="animated-back-btn"
->
-  <div className="back-sign">
-    <svg viewBox="0 0 512 512">
-      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
-    </svg>
-  </div>
-  <div className="back-text">Back</div>
-</button>
-
+                onClick={() => updateView('style', false)}
+                className="animated-back-btn"
+              >
+                <div className="back-sign">
+                  <svg viewBox="0 0 512 512">
+                    <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+                  </svg>
+                </div>
+                <div className="back-text">Back</div>
+              </button>
             </div>
             <Card className="p-6 mb-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
               <div className="flex items-center gap-3">
-                <FaTshirt className="text-2xl" />
+                <FaTshirt className="text-2xl text-white" />
                 <div>
                   <h2 className="text-xl font-semibold">Personal Style Consultant</h2>
                   <p className="opacity-90">Tailored for your profile</p>
@@ -1377,17 +1563,16 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-gray-200">Grocery List</h1>
               <button
-  onClick={() => updateView('grocery', false)}
-  className="animated-back-btn"
->
-  <div className="back-sign">
-    <svg viewBox="0 0 512 512">
-      <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
-    </svg>
-  </div>
-  <div className="back-text">Back</div>
-</button>
-
+                onClick={() => updateView('grocery', false)}
+                className="animated-back-btn"
+              >
+                <div className="back-sign">
+                  <svg viewBox="0 0 512 512">
+                    <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 288 480 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-370.7 0 73.4-73.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-128 128z"></path>
+                  </svg>
+                </div>
+                <div className="back-text">Back</div>
+              </button>
             </div>
             <Card className="p-6 mb-6 bg-gray-800">
               <div className="flex gap-2">
@@ -1397,51 +1582,61 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             </Card>
            
             <div className="grid gap-3">
-  {groceryList.map(item => (
-    <Card key={item.id} className="p-4 bg-gray-800">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={item.completed}
-            onChange={() => toggleGroceryItem(item.id)}
-            className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600"
-          />
-          <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>
-            {item.text}
-          </span>
-        </div>
-        
-        <button
-          onClick={() => deleteGroceryItem(item.id)}
-          className="animated-delete-button"
-        >
-          <svg viewBox="0 0 448 512" className="delete-svg-icon">
-            <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path>
-          </svg>
-        </button>
-      </div>
-    </Card>
-  ))}
-  
-  {groceryList.length === 0 && (
-    <Card className="p-8 text-center bg-gray-800">
-      <FaShoppingCart className="text-4xl text-gray-400 mx-auto mb-4" />
-      <p className="text-gray-300">No items yet</p>
-      <p className="text-sm text-gray-400">Add items above to get started</p>
-    </Card>
-  )}
-</div>
+              {groceryList.map(item => (
+                <Card key={item.id} className="p-4 bg-gray-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        onChange={() => toggleGroceryItem(item.id)}
+                        className="w-5 h-5 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-600"
+                      />
+                      <span className={`${item.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>
+                        {item.text}
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={() => deleteGroceryItem(item.id)}
+                      className="animated-delete-button"
+                    >
+                      <svg viewBox="0 0 448 512" className="delete-svg-icon">
+                        <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </Card>
+              ))}
+              
+              {groceryList.length === 0 && (
+                <Card className="p-8 text-center bg-gray-800">
+                  <FaShoppingCart className="text-4xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300">No items yet</p>
+                  <p className="text-sm text-gray-400">Add items above to get started</p>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
     );
   }
   
-  // --- MAIN DASHBOARD ---
-  
   return (
     <div className="min-h-screen text-white relative">
+        <Modal 
+            isOpen={modalState.isOpen}
+            onClose={closeModal}
+            onConfirm={modalState.onConfirm}
+            title={modalState.title}
+            type={modalState.type}
+            confirmText={modalState.confirmText}
+            confirmColor={modalState.confirmColor}
+        >
+            {modalState.children}
+        </Modal>
+
         <Sidebar
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
@@ -1450,7 +1645,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             photoURL={userProfile?.photoURL}
             onLogout={() => signOut(auth)}
             isDynamicBackground={isDynamicBackground}
-            onToggleBackground={() => setIsDynamicBackground(p => !p)}
+            onToggleBackground={handleToggleBackground}
             onImageUpload={handleProfileImageUpload}
             isUploading={isUploading}
             uploadProgress={uploadProgress}
@@ -1485,18 +1680,17 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                 </div>
             </div>
 
-            {/* College & Life Section */}
             <section>
                 <SectionHeader
                     title="College & Life"
-                    icon={<FaCalendarAlt className="text-2xl text-blue-400" />}
+                    icon={<FaCalendarAlt className="text-2xl text-white" />}
                     titleColor="text-blue-400"
                 >
                 </SectionHeader>
                 <div className="grid md:grid-cols-3 gap-6">
                     <DashboardCard className="p-8" onClick={() => updateView('schedule', true)}>
                     <div className="flex items-center gap-4">
-                        <FaCalendarAlt className="text-4xl text-blue-400" />
+                        <FaCalendarAlt className="text-4xl text-white" />
                         <div>
                         <h3 className="font-semibold text-gray-200">Schedule</h3>
                         <p className="text-sm text-gray-400">View timetable</p>
@@ -1505,7 +1699,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                     </DashboardCard>
                     <DashboardCard className="p-8" onClick={() => updateView('attendance', true)}>
                     <div className="flex items-center gap-4">
-                        <FaCheckCircle className="text-4xl text-green-400" />
+                        <FaCheckCircle className="text-4xl text-white" />
                         <div>
                         <h3 className="font-semibold text-gray-200">Attendance</h3>
                         <p className="text-sm text-gray-400">Track classes</p>
@@ -1514,7 +1708,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                     </DashboardCard>
                     <DashboardCard className="p-8" onClick={() => updateView('assignments', true)}>
                     <div className="flex items-center gap-4">
-                        <FaTasks className="text-4xl text-purple-400" />
+                        <FaTasks className="text-4xl text-white" />
                         <div>
                         <h3 className="font-semibold text-gray-200">Assignments</h3>
                         <p className="text-sm text-gray-400">Track pending tasks</p>
@@ -1524,17 +1718,16 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                 </div>
             </section>
 
-            {/* Fitness Section */}
             <section>
                 <SectionHeader
                     title="Fitness"
-                    icon={<FaDumbbell className="text-2xl text-red-400" />}
+                    icon={<FaDumbbell className="text-2xl text-white" />}
                     titleColor="text-red-400"
                 />
                 <div className="grid md:grid-cols-3 gap-6">
                     <DashboardCard className="p-8" onClick={() => updateView('gym', true)}>
                     <div className="flex items-center gap-4">
-                        <FaDumbbell className="text-4xl text-red-400" />
+                        <FaDumbbell className="text-4xl text-white" />
                         <div>
                         <h3 className="font-semibold text-gray-200">Gym Tracker</h3>
                         <p className="text-sm text-gray-400">Log workouts</p>
@@ -1543,7 +1736,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                     </DashboardCard>
                     <DashboardCard className="p-8">
                     <div className="flex items-center gap-4">
-                        <FaAppleAlt className="text-4xl text-green-400" />
+                        <FaAppleAlt className="text-4xl text-white" />
                         <div>
                         <h3 className="font-semibold text-gray-200">Diet Tracker</h3>
                         <p className="text-sm text-gray-400">Monitor nutrition</p>
@@ -1552,7 +1745,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                     </DashboardCard>
                     <DashboardCard className="p-8" onClick={() => updateView('grocery', true)}>
                     <div className="flex items-center gap-4">
-                        <FaShoppingCart className="text-4xl text-orange-400" />
+                        <FaShoppingCart className="text-4xl text-white" />
                         <div>
                         <h3 className="font-semibold text-gray-200">Grocery List</h3>
                         <p className="text-sm text-gray-400">Plan shopping</p>
@@ -1565,7 +1758,7 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
             <section>
                 <SectionHeader
                     title="Coding"
-                    icon={<FaCode className="text-2xl text-green-400" />}
+                    icon={<FaCode className="text-2xl text-white" />}
                     titleColor="text-green-400"
                 />
                 <div className="grid md:grid-cols-2 gap-6">
@@ -1605,10 +1798,10 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                     </div>
                 </Card>
                 <Card onClick={() => updateView('chat', true)} className="p-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 relative">
-            
+          
                     <div className="relative z-10">
                     <div className="flex items-center gap-4">
-                        <FaRobot className="text-3xl" />
+                        <FaRobot className="text-3xl text-white" />
                         <div>
                         <h3 className="font-semibold text-lg">Chat with AI Assistant</h3>
                         <p className="text-sm opacity-90">Personalized help and guidance</p>
@@ -1620,24 +1813,23 @@ if (views.leetcodeProfile) return <LeetCodeProfilePage onClose={() => updateView
                     </div>
                 </Card>
             </div>
-        
-        </div>
       
-        <button
-            onClick={() => setShowFeedbackModal(true)}
-            className="fixed bottom-5 right-5 w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-3xl shadow-lg hover:bg-purple-700 hover:scale-110 transition-all duration-300 z-40"
-            aria-label="Submit Feedback"
-        >
-            <FaEnvelope />
-        </button>
+        </div>
+    
+      <button
+          onClick={() => setShowFeedbackModal(true)}
+          className="fixed bottom-5 right-5 w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-3xl shadow-lg hover:bg-purple-700 hover:scale-110 transition-all duration-300 z-40"
+          aria-label="Submit Feedback"
+      >
+          <FaEnvelope />
+      </button>
 
-        {/* Feedback Modal */}
-        {showFeedbackModal && user && (
-            <FeedbackModal userEmail={user.email} onClose={() => setShowFeedbackModal(false)} />
-        )}
-    </div>
-   
-  );
+      {showFeedbackModal && user && (
+          <FeedbackModal userEmail={user.email} onClose={() => setShowFeedbackModal(false)} />
+      )}
+  </div>
+ 
+);
 }
 
 export default App;

@@ -997,3 +997,12 @@ th, td { text-align: left; padding: 0.75rem; }
 .animate-fade-in {
   animation: fade-in 0.2s ease-out forwards;
 }
+/* Add this to the end of src/index.css to fix the delete button color */
+.modal-confirm-delete-button {
+  background-color: #dc2626 !important; /* red-600 */
+  color: white !important;
+}
+
+.modal-confirm-delete-button:hover {
+  background-color: #b91c1c !important; /* red-700 */
+}

@@ -1,11 +1,12 @@
 // src/Modal.js
 import React from 'react';
-import { FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
+import { FaTimesCircle, FaInfoCircle } from 'react-icons/fa';
 
 const Modal = ({ isOpen, onClose, onConfirm, title, children, type = 'alert', confirmText = 'Confirm', confirmColor = 'bg-red-600 hover:bg-red-700' }) => {
   if (!isOpen) return null;
 
   const isConfirmation = type === 'confirmation';
+  const isDeleteButton = confirmText === 'Delete';
 
   // Define base classes for clarity
   const baseButtonClasses = "px-6 py-2 text-white rounded-lg font-semibold transition-all duration-200 transform hover:scale-105";
@@ -15,7 +16,7 @@ const Modal = ({ isOpen, onClose, onConfirm, title, children, type = 'alert', co
       <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 md:p-8 relative border border-gray-700">
         <div className="flex items-center gap-4 mb-4">
           {isConfirmation ? 
-            <FaExclamationTriangle className="text-2xl text-yellow-400" /> :
+            <FaTimesCircle className="text-2xl text-red-500" /> :
             <FaInfoCircle className="text-2xl text-blue-400" />
           }
           <h2 className="text-xl font-bold text-gray-100">{title}</h2>
@@ -38,7 +39,7 @@ const Modal = ({ isOpen, onClose, onConfirm, title, children, type = 'alert', co
           {isConfirmation ? (
             <button 
               onClick={onConfirm} 
-              className={`${baseButtonClasses} ${confirmColor}`}
+              className={`${baseButtonClasses} ${isDeleteButton ? 'modal-confirm-delete-button' : confirmColor}`}
             >
               {confirmText}
             </button>

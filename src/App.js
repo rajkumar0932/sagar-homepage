@@ -8,12 +8,13 @@ import AnimatedBackground from './AnimatedBackground';
 import LoginPage from './LoginPage';
 import Sidebar from './Sidebar'; 
 import Modal from './Modal'; // Import the new Modal component
+import CPCalendarPage from './CPCalendarPage'; // Import the new CP Calendar page
 import './NewToggle.css'; 
 import {
   FaCalendarAlt, FaCheckCircle, FaDumbbell, FaAppleAlt,
   FaRobot, FaExclamationTriangle, FaQuoteLeft, FaTshirt, FaShoppingCart,
   FaChevronLeft, FaChevronRight, FaPlus, FaCheck, FaTimes, FaEdit,
-  FaCode, FaTasks, FaEnvelope, FaPaperPlane
+  FaCode, FaTasks, FaEnvelope, FaPaperPlane, FaLaptopCode
 } from 'react-icons/fa';
 
 
@@ -720,7 +721,8 @@ function App() {
   const [views, setViews] = useState({
     attendance: false, schedule: false, skinCare: false, gym: false,
     style: false, grocery: false, chat: false, coding: false,
-    codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false
+    codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false,
+    cpCalendar: false // New view for CP Calendar
   });
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -1097,7 +1099,8 @@ useEffect(() => {
       const newViews = {
         attendance: false, schedule: false, skinCare: false, gym: false,
         style: false, grocery: false, chat: false, coding: false,
-        codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false
+        codeforcesProfile: false, leetcodeProfile: false, notifications: false, assignments: false,
+        cpCalendar: false
       };
       if (event.state && event.state.view) {
         newViews[event.state.view] = true;
@@ -1181,6 +1184,7 @@ if (isLoading) {
   if (views.chat) return <Chat onClose={() => window.history.back()} />;
   if (views.notifications) return <NotificationPage onClose={() => window.history.back()} settings={notificationSettings} onSave={setNotificationSettings} />;
   if (views.assignments) return <AssignmentsPage onClose={() => window.history.back()} assignments={assignments} setAssignments={setAssignments} />;
+  if (views.cpCalendar) return <CPCalendarPage onClose={() => window.history.back()} />;
   if (views.coding) return <CodingDashboard
     onClose={() => window.history.back()}
     codingData={codingData}
@@ -1800,7 +1804,7 @@ if (isLoading) {
                     icon={<FaCode className="text-2xl text-white" />}
                     titleColor="text-green-400"
                 />
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-3 gap-6">
                     
                     <DashboardCard className="p-8" onClick={() => updateView('codeforcesProfile', true)}>
                     <div className="flex items-center gap-4">
@@ -1820,6 +1824,16 @@ if (isLoading) {
                         <p className="text-sm text-gray-400">View detailed performance</p>
                         </div>
                     </div>
+                    </DashboardCard>
+
+                    <DashboardCard className="p-8" onClick={() => updateView('cpCalendar', true)}>
+                      <div className="flex items-center gap-4">
+                          <FaLaptopCode className="text-4xl text-white" />
+                          <div>
+                          <h3 className="font-semibold text-gray-200">CP Calendar</h3>
+                          <p className="text-sm text-gray-400">Upcoming contests</p>
+                          </div>
+                      </div>
                     </DashboardCard>
 
                 </div>

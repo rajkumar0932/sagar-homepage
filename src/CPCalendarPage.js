@@ -3,9 +3,15 @@ import AnimatedBackground from './AnimatedBackground';
 import { FaCalendarAlt, FaClock, FaLink, FaFilter, FaLaptopCode } from 'react-icons/fa';
 
 const ContestCard = ({ contest }) => {
-    // Use the start_time from our new API format
-    const startTime = new Date(contest.start_time).toLocaleString();
-    // Duration is in seconds
+    // Format the start time to be readable in the local timezone (India Standard Time)
+    const startTime = new Date(contest.start_time).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
     const durationHours = (contest.duration / 3600).toFixed(1);
 
     const platformStyles = {
@@ -14,8 +20,7 @@ const ContestCard = ({ contest }) => {
         'CodeChef': { bg: 'bg-orange-500', logo: '/cc.jpg' }
     };
 
-    // Use the site name to identify the platform
-    const style = platformStyles[contest.site] || { bg: 'bg-gray-500', logo: '', name: contest.site };
+    const style = platformStyles[contest.site] || { bg: 'bg-gray-500', logo: '' };
 
     return (
         <div className={`bg-gray-800 rounded-xl shadow-lg hover:shadow-purple-500/20 transition-all duration-300 border border-gray-700 overflow-hidden`}>
@@ -23,21 +28,19 @@ const ContestCard = ({ contest }) => {
             <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <img src={style.logo} alt={`${style.name} logo`} className="w-8 h-8 rounded-full object-contain" />
-                        {/* Use the name field for the contest name */}
+                        <img src={style.logo} alt={`${contest.site} logo`} className="w-8 h-8 rounded-full object-contain" />
                         <h3 className="text-xl font-bold text-gray-100">{contest.name}</h3>
                     </div>
-                    {/* Use the url field for the contest URL */}
-                    <a href={contest.url} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 transition-colors">
+                    <a href={contest.url} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 transition-colors ml-4">
                         <FaLink />
                     </a>
                 </div>
                 <div className="text-sm text-gray-400 space-y-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <FaCalendarAlt />
                         <span>Starts: {startTime}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <FaClock />
                         <span>Duration: {durationHours} hours</span>
                     </div>
@@ -47,6 +50,94 @@ const ContestCard = ({ contest }) => {
     );
 };
 
+// --- Contest Generation Logic ---
+
+// Generates upcoming LeetCode Weekly contests for the next month.
+const generateLeetCodeWeekly = (count = 4) => {
+    const contests = [];
+    let weeklyContestNum = 462; // Corrected base contest number.
+    const now = new Date();
+
+    let nextSunday = new Date(now);
+    nextSunday.setUTCDate(now.getUTCDate() + (7 - now.getUTCDay()) % 7);
+    nextSunday.setUTCHours(2, 30, 0, 0); // Sunday at 8:00 AM IST is 2:30 AM UTC.
+
+    if (nextSunday <= now) {
+        nextSunday.setUTCDate(nextSunday.getUTCDate() + 7);
+    }
+
+    for (let i = 0; i < count; i++) {
+        const contestDate = new Date(nextSunday.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+        contests.push({
+            id: `lc-weekly-${weeklyContestNum + i}`,
+            name: `LeetCode Weekly Contest ${weeklyContestNum + i}`,
+            url: 'https://leetcode.com/contest/',
+            start_time: contestDate.toISOString(),
+            duration: 1.5 * 3600, // 1.5 hours in seconds
+            site: 'LeetCode'
+        });
+    }
+    return contests;
+};
+
+// Generates upcoming LeetCode Biweekly contests for the next month.
+const generateLeetCodeBiweekly = (count = 3) => {
+    const contests = [];
+    let biweeklyContestNum = 135; // Base contest number for the anchor date.
+    const now = new Date();
+    
+    // A known past biweekly contest date to establish the 14-day cycle.
+    const knownBiweeklyDate = new Date('2024-07-20T14:30:00Z'); // Saturday 8:00 PM IST is 14:30 UTC
+
+    let nextContestDate = new Date(knownBiweeklyDate);
+    // Find the first contest date that is in the future relative to now.
+    while (nextContestDate <= now) {
+        nextContestDate.setUTCDate(nextContestDate.getUTCDate() + 14);
+        biweeklyContestNum++;
+    }
+
+    for (let i = 0; i < count; i++) {
+        const contestDate = new Date(nextContestDate.getTime() + i * 14 * 24 * 60 * 60 * 1000);
+        contests.push({
+            id: `lc-biweekly-${biweeklyContestNum + i}`,
+            name: `LeetCode Biweekly Contest ${biweeklyContestNum + i}`,
+            url: 'https://leetcode.com/contest/',
+            start_time: contestDate.toISOString(),
+            duration: 1.5 * 3600, // 1.5 hours in seconds
+            site: 'LeetCode'
+        });
+    }
+    return contests;
+};
+
+// Generates upcoming CodeChef Starters contests for the next month.
+const generateCodeChefStarters = (count = 4) => {
+    const contests = [];
+    let startersNum = 199; // Corrected base contest number.
+    const now = new Date();
+
+    let nextWednesday = new Date(now);
+    nextWednesday.setUTCDate(now.getUTCDate() + (3 - now.getUTCDay() + 7) % 7);
+    nextWednesday.setUTCHours(14, 30, 0, 0); // Wednesday 8:00 PM IST is 14:30 UTC.
+
+    if (nextWednesday <= now) {
+        nextWednesday.setUTCDate(nextWednesday.getUTCDate() + 7);
+    }
+
+    for (let i = 0; i < count; i++) {
+        const contestDate = new Date(nextWednesday.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+        contests.push({
+            id: `cc-starters-${startersNum + i}`,
+            name: `CodeChef Starters ${startersNum + i}`,
+            url: 'https://www.codechef.com/contests',
+            start_time: contestDate.toISOString(),
+            duration: 2 * 3600, // 2 hours in seconds
+            site: 'CodeChef'
+        });
+    }
+    return contests;
+};
+
 const CPCalendarPage = ({ onClose }) => {
     const [contests, setContests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -54,20 +145,44 @@ const CPCalendarPage = ({ onClose }) => {
     const [filter, setFilter] = useState('All');
 
     useEffect(() => {
-        const fetchContests = async () => {
+        const fetchAndGenerateContests = async () => {
             setIsLoading(true);
             setError('');
             try {
-                // Fetching from our own reliable, local API endpoint.
-                const response = await fetch('/api/contests');
+                // Using a reliable proxy to fetch ONLY Codeforces data directly from the client.
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const codeforcesApiUrl = 'https://codeforces.com/api/contest.list';
+                
+                const response = await fetch(proxyUrl + encodeURIComponent(codeforcesApiUrl));
                 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.details || `Failed to fetch contests. Status: ${response.status}`);
+                    throw new Error(`Failed to fetch Codeforces contests. Status: ${response.status}`);
                 }
                 const data = await response.json();
+
+                if (data.status !== 'OK') {
+                    throw new Error('Codeforces API response was not OK.');
+                }
+
+                const codeforcesContests = data.result
+                    .filter(contest => contest.phase === 'BEFORE')
+                    .map(contest => ({
+                        id: contest.id,
+                        name: contest.name,
+                        url: `https://codeforces.com/contests/${contest.id}`,
+                        start_time: new Date(contest.startTimeSeconds * 1000).toISOString(),
+                        duration: contest.durationSeconds,
+                        site: 'CodeForces'
+                    }));
+
+                // Generate the other contests locally as requested.
+                const leetCodeContests = [...generateLeetCodeWeekly(), ...generateLeetCodeBiweekly()];
+                const codeChefContests = generateCodeChefStarters();
+
+                // Combine all contests into one list.
+                const allContests = [...codeforcesContests, ...leetCodeContests, ...codeChefContests];
                 
-                setContests(data || []);
+                setContests(allContests);
 
             } catch (err) {
                 setError(err.message);
@@ -75,7 +190,7 @@ const CPCalendarPage = ({ onClose }) => {
                 setIsLoading(false);
             }
         };
-        fetchContests();
+        fetchAndGenerateContests();
     }, []);
 
     const filters = ['All', 'CodeForces', 'LeetCode', 'CodeChef'];
@@ -99,8 +214,8 @@ const CPCalendarPage = ({ onClose }) => {
                     </button>
                 </div>
 
-                <div className="bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-xl p-4 mb-8 flex items-center justify-center gap-2">
-                    <FaFilter className="text-gray-400" />
+                <div className="bg-gray-800 bg-opacity-70 backdrop-blur-sm rounded-xl p-4 mb-8 flex items-center justify-center gap-6">
+                    <FaFilter className="text-gray-400 mr-2" />
                     {filters.map(f => (
                         <button
                             key={f}
@@ -116,7 +231,7 @@ const CPCalendarPage = ({ onClose }) => {
                 {error && <div className="text-center text-red-400 bg-red-900 bg-opacity-50 p-3 rounded-lg">{error}</div>}
                 
                 {!isLoading && !error && (
-                    <div className="space-y-4">
+                    <div className="space-y-8">
                         {filteredContests.length > 0 ? (
                             filteredContests.map(contest => <ContestCard key={contest.id} contest={contest} />)
                         ) : (

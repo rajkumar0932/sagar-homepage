@@ -156,14 +156,28 @@ module.exports = async (req, res) => {
 };
 
 // Helper function to call our own send-notification API
+// Helper function to call our own send-notification API
 async function sendNotification(to, subject, text) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    // This is the new, corrected URL logic for Vercel.
+    const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'http://localhost:3000';
+
+    const apiUrl = `${baseUrl}/api/send-notification`;
+
     try {
-        await fetch(`${apiUrl}/api/send-notification`, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ to, subject, text }),
         });
+
+        // Add a check to see if the API call itself was successful
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Failed to send notification. The send-notification API responded with status ${response.status}:`, errorBody);
+        }
+
     } catch (error) {
         console.error(`Failed to send notification to ${to}:`, error);
     }

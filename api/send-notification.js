@@ -1,44 +1,60 @@
-const nodemailer = require('nodemailer');
+// File: /api/send-notification.js
+// This script now uses the Brevo API for sending all transactional emails,
+// ensuring reliability for your contest, assignment, and lab reminders.
 
-// This function handles the actual sending of an email.
-// It uses the Nodemailer library and is configured to use Gmail.
-// For this to work, you must set up an "App Password" for your Gmail account.
-module.exports = async (req, res) => {
-    // Only allow POST requests to this endpoint.
+export default async function handler(req, res) {
+    // We only accept POST requests for this endpoint.
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     const { to, subject, text } = req.body;
+    const brevoApiKey = process.env.BREVO_API_KEY;
 
-    // Basic validation to ensure required fields are present.
-    if (!to || !subject || !text) {
-        return res.status(400).json({ error: 'Missing required fields: to, subject, text' });
+    // The sender email should be a verified sender in your Brevo account.
+    // Using an environment variable makes it easy to manage.
+    const senderEmail = process.env.EMAIL_USER;
+
+    // Crucial check: Ensure the server has the necessary configuration.
+    if (!brevoApiKey || !senderEmail) {
+        console.error("SERVER ERROR: BREVO_API_KEY or EMAIL_USER is not configured in Vercel environment variables.");
+        return res.status(500).json({ error: 'Server configuration error. Please check environment variables.' });
     }
 
-    // Create a transporter object using Gmail's SMTP server.
-    // You MUST set the EMAIL_USER and EMAIL_PASS environment variables for this to work.
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER, // Your Gmail address
-            pass: process.env.EMAIL_PASS, // Your Gmail App Password
-        },
-    });
-
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: to,
-        subject: subject,
-        html: `<p>${text.replace(/\n/g, '<br>')}</p>`, // Convert newlines to breaks for HTML email
-    };
+    // Ensure the request from cron.js contains all necessary fields.
+    if (!to || !subject || !text) {
+        return res.status(400).json({ error: 'Bad Request: Missing required fields (to, subject, or text).' });
+    }
 
     try {
-        // Attempt to send the email.
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({ message: 'Email sent successfully' });
+        // This is the standard API call to the Brevo transactional email endpoint.
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': brevoApiKey,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                sender: { email: senderEmail },
+                to: [{ email: to }],
+                subject: subject,
+                // Using htmlContent allows for better formatting, like line breaks.
+                htmlContent: `<html><body><p>${text.replace(/\n/g, '<br>')}</p></body></html>`
+            })
+        });
+
+        // If Brevo returns an error, we capture and log the details.
+        if (!response.ok) {
+            const errorBody = await response.json();
+            console.error('Brevo API Error:', errorBody);
+            throw new Error(`Failed to send email. Brevo API responded with status: ${response.status}`);
+        }
+
+        res.status(200).json({ message: 'Email sent successfully via Brevo.' });
+
     } catch (error) {
-        console.error('Error sending email:', error);
-        res.status(500).json({ error: 'Failed to send email', details: error.message });
+        console.error('Error sending notification:', error);
+        res.status(500).json({ error: 'Failed to send email.', details: error.message });
     }
-};
+}

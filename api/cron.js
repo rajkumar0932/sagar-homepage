@@ -55,6 +55,7 @@ const generateCodeChefStarters = (count = 4) => {
 // --- Main Cron Job Handler ---
 module.exports = async (req, res) => {
     try {
+        await sendNotification('kumarraj0932@gmail.com', 'CRON JOB TEST', 'This is a test notification to confirm the cron job is running.');
         const now = new Date();
         const usersSnapshot = await db.collection('userData').get();
         
@@ -107,6 +108,9 @@ module.exports = async (req, res) => {
             }
            
             // 3. Check for Lab Period Reminders
+           // --- Start of the updated section ---
+
+            // 3. Check for Lab Period Reminders
             if (user.schedule && user.notificationSettings.labNotify !== false) {
                 const today = now.toLocaleString('en-US', { weekday: 'long', timeZone: 'Asia/Kolkata' }).toLowerCase();
                 const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes from midnight (UTC)
@@ -114,19 +118,35 @@ module.exports = async (req, res) => {
                 for (const period of user.schedule) {
                     const subject = period[today];
                     if (subject && subject.toUpperCase().includes('LAB')) {
+                        // Create a unique ID for this lab on this specific day to track if a notification has been sent.
+                        const labId = `lab-${subject.replace(/\s+/g, '-')}-${now.toISOString().split('T')[0]}`;
+
+                        // Check if we've already sent a notification for this specific lab today.
+                        if ((user.sentNotifications || []).includes(labId)) {
+                            continue; // Skip if notification already sent.
+                        }
+
                         const [startHour] = period.time.split(':')[0].split('-').map(Number);
-                        const periodStartTime = (startHour + (startHour < 6 ? 12 : 0) - 5.5) * 60; // Convert to UTC minutes
+                        // This logic correctly calculates the start time in UTC minutes
+                        const periodStartTime = (startHour + (startHour < 6 ? 12 : 0) - 5.5) * 60; 
                         const diffMinutes = periodStartTime - currentTime;
+
                          if (diffMinutes > 0 && diffMinutes <= 15) {
-                            const subject = `Lab Class Starting Soon: ${subject}`;
+                            const notificationSubject = `Lab Class Starting Soon: ${subject}`;
                             const text = `Hi ${user.firstName || 'User'},\n\nYour lab class "${subject}" is starting in about 15 minutes.`;
-                            // Note: This might send multiple notifications if cron runs frequently.
-                            // A more robust solution would involve tracking sent lab notifications.
-                            await sendNotification(userEmail, subject, text);
+                            
+                            await sendNotification(userEmail, notificationSubject, text);
+
+                            // IMPORTANT: Record that the notification for this lab was sent.
+                            await db.collection('userData').doc(userId).update({
+                                sentNotifications: admin.firestore.FieldValue.arrayUnion(labId)
+                            });
                         }
                     }
                 }
             }
+
+// --- End of the updated section ---
         }
         res.status(200).json({ message: 'Cron job completed successfully.' });
     } catch (error) {

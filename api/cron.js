@@ -66,7 +66,7 @@ export default async (req, res) => {
             if (!userEmail) continue; 
 
             // Assignment Reminders
-            if (user.assignments && user.notificationSettings.contestNotify !== false) {
+            if (user.assignments && user.notificationSettings.contestNotify === true) {
                 for (const assignment of user.assignments) {
                     if (assignment.notificationSent) continue;
                     const deadline = new Date(assignment.deadline);

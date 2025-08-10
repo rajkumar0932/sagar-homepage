@@ -60,12 +60,11 @@ export default async (req, res) => {
 
             // --- Assignment Reminders (CORRECTED LOGIC) ---
             if (user.assignments && user.notificationSettings?.contestNotify === true) {
+                const assignmentsToUpdate = [];
                 for (const assignment of user.assignments) {
                     if (assignment.notificationSent) continue;
 
-                    // **THE FIX:** The deadline is a string, so we create a Date object directly from it.
                     const deadline = new Date(assignment.deadline);
-                    
                     const diffHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
                     
                     if (diffHours > 0 && diffHours <= 24) {
@@ -73,14 +72,19 @@ export default async (req, res) => {
                         const text = `Hi ${user.firstName || 'User'},\n\nThis is a reminder that your assignment "${assignment.title}" is due in less than 24 hours.\n\nGood luck!`;
                         await sendEmail({ to: userEmail, subject, text });
                         
-                        // Mark the notification as sent in the database.
-                        const updatedAssignments = user.assignments.map(a => a.id === assignment.id ? { ...a, notificationSent: true } : a);
-                        await db.collection('userData').doc(userId).update({ assignments: updatedAssignments });
+                        // **THE BUG FIX:** Mark the assignment as sent for the next update.
+                        assignmentsToUpdate.push({ ...assignment, notificationSent: true });
+                    } else {
+                        assignmentsToUpdate.push(assignment);
                     }
+                }
+                // Update the database with the corrected assignments array.
+                if (assignmentsToUpdate.length > 0) {
+                    await db.collection('userData').doc(userId).update({ assignments: assignmentsToUpdate });
                 }
             }
 
-            // --- Contest Reminders (IMPROVED LOGIC) ---
+            // --- Contest Reminders (Corrected Logic) ---
             if (user.notificationSettings?.contestNotify === true) {
                  for (const contest of allContests) {
                     const startTime = new Date(contest.start_time);
@@ -96,7 +100,7 @@ export default async (req, res) => {
                 }
             }
            
-            // --- Lab Period Reminders (IMPROVED LOGIC) ---
+            // --- Lab Period Reminders (Corrected Logic) ---
             if (user.schedule && user.notificationSettings?.labNotify === true) {
                  const today = now.toLocaleString('en-US', { weekday: 'long', timeZone: 'Asia/Kolkata' }).toLowerCase();
                  const currentTime = now.getHours() * 60 + now.getMinutes();

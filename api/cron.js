@@ -52,7 +52,7 @@ const generateCodeChefStarters = (count = 4) => {
 export default async (req, res) => {
     try {
         // THIS IS THE TEST EMAIL. We now call sendEmail directly.
-        await sendEmail({ to: 'kumarraj0932@gmail.com', subject: 'CRON JOB TEST', text: 'This is a test notification to confirm the cron job is running.' });
+     
 
         const now = new Date();
         const usersSnapshot = await db.collection('userData').get();

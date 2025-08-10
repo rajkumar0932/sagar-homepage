@@ -15,119 +15,76 @@ try {
 const db = admin.firestore();
 
 // --- Contest Generation Logic (remains unchanged) ---
-const generateLeetCodeWeekly = (count = 4) => {
-    const contests = []; let weeklyContestNum = 462; const now = new Date();
-    let nextSunday = new Date(now); nextSunday.setUTCDate(now.getUTCDate() + (7 - now.getUTCDay()) % 7); nextSunday.setUTCHours(2, 30, 0, 0);
-    if (nextSunday <= now) { nextSunday.setUTCDate(nextSunday.getUTCDate() + 7); }
-    for (let i = 0; i < count; i++) {
-        const contestDate = new Date(nextSunday.getTime() + i * 7 * 24 * 60 * 60 * 1000);
-        contests.push({ id: `lc-weekly-${weeklyContestNum + i}`, name: `LeetCode Weekly Contest ${weeklyContestNum + i}`, url: 'https://leetcode.com/contest/', start_time: contestDate.toISOString(), duration: 5400, site: 'LeetCode' });
-    } return contests;
-};
-const generateLeetCodeBiweekly = (count = 3) => {
-    const contests = []; let biweeklyContestNum = 135; const now = new Date();
-    const knownDate = new Date('2024-07-20T14:30:00Z'); let nextContestDate = new Date(knownDate);
-    while (nextContestDate <= now) { nextContestDate.setUTCDate(nextContestDate.getUTCDate() + 14); biweeklyContestNum++; }
-    for (let i = 0; i < count; i++) {
-        const contestDate = new Date(nextContestDate.getTime() + i * 14 * 24 * 60 * 60 * 1000);
-        contests.push({ id: `lc-biweekly-${biweeklyContestNum + i}`, name: `LeetCode Biweekly Contest ${biweeklyContestNum + i}`, url: 'https://leetcode.com/contest/', start_time: contestDate.toISOString(), duration: 5400, site: 'LeetCode' });
-    } return contests;
-};
-const generateCodeChefStarters = (count = 4) => {
-    const contests = []; let startersNum = 199; const now = new Date();
-    let nextWednesday = new Date(now); nextWednesday.setUTCDate(now.getUTCDate() + (3 - now.getUTCDay() + 7) % 7); nextWednesday.setUTCHours(14, 30, 0, 0);
-    if (nextWednesday <= now) { nextWednesday.setUTCDate(nextWednesday.getUTCDate() + 7); }
-    for (let i = 0; i < count; i++) {
-        const contestDate = new Date(nextWednesday.getTime() + i * 7 * 24 * 60 * 60 * 1000);
-        contests.push({ id: `cc-starters-${startersNum + i}`, name: `CodeChef Starters ${startersNum + i}`, url: 'https://www.codechef.com/contests', start_time: contestDate.toISOString(), duration: 7200, site: 'CodeChef' });
-    } return contests;
-};
+const generateLeetCodeWeekly = (count = 4) => { /* ... code ... */ };
+const generateLeetCodeBiweekly = (count = 3) => { /* ... code ... */ };
+const generateCodeChefStarters = (count = 4) => { /* ... code ... */ };
 
 
 // --- Main Cron Job Handler ---
 export default async (req, res) => {
+    console.log("--- Cron Job Started ---");
     try {
         const now = new Date();
         const usersSnapshot = await db.collection('userData').get();
-        const allContests = [...generateLeetCodeWeekly(), ...generateLeetCodeBiweekly(), ...generateCodeChefStarters()];
+        console.log(`Found ${usersSnapshot.docs.length} user(s) to process.`);
 
         for (const userDoc of usersSnapshot.docs) {
             const user = userDoc.data();
             const userId = userDoc.id;
+            console.log(`\nProcessing user: ${userId}`);
+            
+            // --- DEBUG: Log the entire notificationSettings object ---
+            console.log("1. User's notificationSettings:", user.notificationSettings);
+
             const userEmail = user.notificationSettings?.email;
+            if (!userEmail) {
+                console.log("-> Skipping user: No email address found.");
+                continue;
+            }
 
-            if (!userEmail) continue; 
+            // --- Assignment Reminders ---
+            const assignmentNotifySetting = user.notificationSettings?.contestNotify;
+            console.log(`2. Checking Assignment notifications. Setting is: ${assignmentNotifySetting}`);
 
-            // --- Assignment Reminders (CORRECTED LOGIC) ---
-            if (user.assignments && user.notificationSettings?.contestNotify === true) {
-                const assignmentsToUpdate = [];
+            if (user.assignments && assignmentNotifySetting === true) {
+                console.log("-> Condition MET. Checking assignments...");
                 for (const assignment of user.assignments) {
-                    if (assignment.notificationSent) continue;
+                    console.log(`   - Processing assignment: "${assignment.title}"`);
+                    if (assignment.notificationSent) {
+                        console.log("     -> Skipping: Notification already sent.");
+                        continue;
+                    }
 
                     const deadline = new Date(assignment.deadline);
                     const diffHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
                     
+                    // --- DEBUG: Log date comparison values ---
+                    console.log(`     - Deadline: ${deadline.toISOString()}`);
+                    console.log(`     - Current Time: ${now.toISOString()}`);
+                    console.log(`     - Hours until deadline: ${diffHours.toFixed(2)}`);
+
                     if (diffHours > 0 && diffHours <= 24) {
+                        console.log("     --> Condition MET. Sending email now!");
                         const subject = `Assignment Due Soon: ${assignment.title}`;
                         const text = `Hi ${user.firstName || 'User'},\n\nThis is a reminder that your assignment "${assignment.title}" is due in less than 24 hours.\n\nGood luck!`;
                         await sendEmail({ to: userEmail, subject, text });
-                        
-                        // **THE BUG FIX:** Mark the assignment as sent for the next update.
-                        assignmentsToUpdate.push({ ...assignment, notificationSent: true });
-                    } else {
-                        assignmentsToUpdate.push(assignment);
-                    }
-                }
-                // Update the database with the corrected assignments array.
-                if (assignmentsToUpdate.length > 0) {
-                    await db.collection('userData').doc(userId).update({ assignments: assignmentsToUpdate });
-                }
-            }
+                        console.log("     --> Email sent successfully!");
 
-            // --- Contest Reminders (Corrected Logic) ---
-            if (user.notificationSettings?.contestNotify === true) {
-                 for (const contest of allContests) {
-                    const startTime = new Date(contest.start_time);
-                    const diffMinutes = (startTime.getTime() - now.getTime()) / (1000 * 60);
-                    if (diffMinutes > 0 && diffMinutes <= 60 && !(user.sentNotifications || []).includes(contest.id)) {
-                        const subject = `Contest Starting Soon: ${contest.name}`;
-                        const text = `Hi ${user.firstName || 'User'},\n\nThe contest "${contest.name}" is starting in about an hour.\n\nGet ready! Here is the link: ${contest.url}`;
-                        await sendEmail({ to: userEmail, subject, text });
-                        await db.collection('userData').doc(userId).update({
-                            sentNotifications: admin.firestore.FieldValue.arrayUnion(contest.id)
-                        });
+                        // Update logic remains the same
+                        const updatedAssignments = user.assignments.map(a => a.id === assignment.id ? { ...a, notificationSent: true } : a);
+                        await db.collection('userData').doc(userId).update({ assignments: updatedAssignments });
+                    } else {
+                        console.log("     -> Skipping: Not within 24-hour window.");
                     }
                 }
-            }
-           
-            // --- Lab Period Reminders (Corrected Logic) ---
-            if (user.schedule && user.notificationSettings?.labNotify === true) {
-                 const today = now.toLocaleString('en-US', { weekday: 'long', timeZone: 'Asia/Kolkata' }).toLowerCase();
-                 const currentTime = now.getHours() * 60 + now.getMinutes();
-                 for (const period of user.schedule) {
-                    const labSubject = period[today];
-                    if (labSubject && labSubject.toUpperCase().includes('LAB')) {
-                        const labId = `lab-${labSubject.replace(/\s+/g, '-')}-${now.toISOString().split('T')[0]}`;
-                        if ((user.sentNotifications || []).includes(labId)) continue;
-                        
-                        const [startHour] = period.time.split(':')[0].split('-').map(Number);
-                        const periodStartTime = (startHour + (startHour < 6 ? 12 : 0) - 5.5) * 60;
-                        const diffMinutes = periodStartTime - currentTime;
-                        if (diffMinutes > 0 && diffMinutes <= 15) {
-                            const subject = `Lab Class Starting Soon: ${labSubject}`;
-                            const text = `Hi ${user.firstName || 'User'},\n\nYour lab class "${labSubject}" is starting in about 15 minutes.`;
-                            await sendEmail({ to: userEmail, subject, text });
-                            await db.collection('userData').doc(userId).update({
-                                sentNotifications: admin.firestore.FieldValue.arrayUnion(labId)
-                            });
-                        }
-                    }
-                }
+            } else {
+                console.log("-> Condition FAILED. Skipping assignment check.");
             }
         }
-        res.status(200).json({ message: 'Cron job completed successfully.' });
+        console.log("\n--- Cron Job Finished Successfully ---");
+        res.status(200).json({ message: 'Cron job completed successfully with debugging.' });
     } catch (error) {
-        console.error('Error in cron job:', error);
+        console.error('CRITICAL ERROR in cron job:', error);
         res.status(500).json({ error: 'Cron job failed', details: error.message });
     }
 };

@@ -14,69 +14,53 @@ try {
 }
 const db = admin.firestore();
 
-// --- Contest Generation Logic (This is a placeholder, as it was not provided in the last turn) ---
+// --- Contest Generation Logic (placeholder) ---
 const generateLeetCodeWeekly = (count = 4) => { return []; };
 const generateLeetCodeBiweekly = (count = 3) => { return []; };
 const generateCodeChefStarters = (count = 4) => { return []; };
 
-
 // --- Main Cron Job Handler ---
 export default async (req, res) => {
-    console.log("--- Cron Job Started ---");
     try {
         const now = new Date();
         const usersSnapshot = await db.collection('userData').get();
-        console.log(`Found ${usersSnapshot.docs.length} user(s) to process.`);
+        const allContests = [...generateLeetCodeWeekly(), ...generateLeetCodeBiweekly(), ...generateCodeChefStarters()];
 
         for (const userDoc of usersSnapshot.docs) {
             const user = userDoc.data();
             const userId = userDoc.id;
             const userEmail = user.notificationSettings?.email;
 
-            // --- Assignment Reminders (FINAL CORRECTED LOGIC) ---
+            if (!userEmail) continue;
+
+            // --- Assignment Reminders ---
             if (user.assignments && user.notificationSettings?.contestNotify === true) {
-                // This flag will track if any changes were made.
                 let assignmentsWereUpdated = false;
-                
-                // The .map() function creates a NEW array with the updated assignments.
                 const updatedAssignments = user.assignments.map(assignment => {
-                    // If notification was already sent or there's no deadline, do not change anything.
                     if (assignment.notificationSent || !assignment.deadline) {
                         return assignment;
                     }
-
                     const deadline = new Date(assignment.deadline);
                     const diffHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-                    // Check if the assignment is within the 24-hour notification window.
                     if (diffHours > 0 && diffHours <= 24) {
-                        console.log(`-> Sending reminder for: "${assignment.title}"`);
                         const subject = `Assignment Due Soon: ${assignment.title}`;
                         const text = `Hi ${user.firstName || 'User'},\n\nThis is a reminder that your assignment "${assignment.title}" is due in less than 24 hours.`;
-                        
-                        // We use a .then().catch() here so that a single failed email doesn't stop the whole process.
                         sendEmail({ to: userEmail, subject, text }).catch(err => console.error(`Failed to send email for ${assignment.title}:`, err));
-                        
-                        // Mark that we need to update the database.
                         assignmentsWereUpdated = true;
-                        
-                        // Return the MODIFIED assignment with the notificationSent flag.
                         return { ...assignment, notificationSent: true };
                     }
-                    
-                    // If not in the window, return the original assignment unmodified.
                     return assignment;
                 });
-
-                // **THE FIX:** We only write to the database ONE time, after the loop is finished, and only if changes were made.
                 if (assignmentsWereUpdated) {
                     await db.collection('userData').doc(userId).update({ assignments: updatedAssignments });
-                    console.log("--> Updated assignments in Firestore with notificationSent flags.");
                 }
             }
-            // ... (The rest of your code for contests and labs remains the same)
+
+            // --- Contest & Lab Reminders (Logic remains the same) ---
+            // ... (rest of your contest and lab notification code)
+
         }
-        console.log("\n--- Cron Job Finished Successfully ---");
         res.status(200).json({ message: 'Cron job completed successfully.' });
     } catch (error) {
         console.error('CRITICAL ERROR in cron job:', error);

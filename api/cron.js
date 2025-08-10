@@ -5,21 +5,16 @@ const admin = require('firebase-admin');
 try {
     if (!admin.apps.length) {
         const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-        if (!serviceAccountBase64) {
-            throw new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 env variable is not set.');
-        }
+        if (!serviceAccountBase64) { throw new Error('Firebase service account key is not set.'); }
         const serviceAccount = JSON.parse(Buffer.from(serviceAccountBase64, 'base64').toString('utf8'));
-        
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
+        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     }
 } catch (error) {
     console.error('Firebase Admin Initialization Error:', error);
 }
 const db = admin.firestore();
 
-// --- Contest Generation Logic ---
+// --- Contest Generation Logic (remains unchanged) ---
 const generateLeetCodeWeekly = (count = 4) => {
     const contests = []; let weeklyContestNum = 462; const now = new Date();
     let nextSunday = new Date(now); nextSunday.setUTCDate(now.getUTCDate() + (7 - now.getUTCDay()) % 7); nextSunday.setUTCHours(2, 30, 0, 0);
@@ -48,12 +43,10 @@ const generateCodeChefStarters = (count = 4) => {
     } return contests;
 };
 
+
 // --- Main Cron Job Handler ---
 export default async (req, res) => {
     try {
-        // THIS IS THE TEST EMAIL. We now call sendEmail directly.
-     
-
         const now = new Date();
         const usersSnapshot = await db.collection('userData').get();
         const allContests = [...generateLeetCodeWeekly(), ...generateLeetCodeBiweekly(), ...generateCodeChefStarters()];
@@ -65,24 +58,30 @@ export default async (req, res) => {
 
             if (!userEmail) continue; 
 
-            // Assignment Reminders
-            if (user.assignments && user.notificationSettings.contestNotify === true) {
+            // --- Assignment Reminders (CORRECTED LOGIC) ---
+            if (user.assignments && user.notificationSettings?.contestNotify === true) {
                 for (const assignment of user.assignments) {
                     if (assignment.notificationSent) continue;
+
+                    // **THE FIX:** The deadline is a string, so we create a Date object directly from it.
                     const deadline = new Date(assignment.deadline);
+                    
                     const diffHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+                    
                     if (diffHours > 0 && diffHours <= 24) {
                         const subject = `Assignment Due Soon: ${assignment.title}`;
                         const text = `Hi ${user.firstName || 'User'},\n\nThis is a reminder that your assignment "${assignment.title}" is due in less than 24 hours.\n\nGood luck!`;
                         await sendEmail({ to: userEmail, subject, text });
+                        
+                        // Mark the notification as sent in the database.
                         const updatedAssignments = user.assignments.map(a => a.id === assignment.id ? { ...a, notificationSent: true } : a);
                         await db.collection('userData').doc(userId).update({ assignments: updatedAssignments });
                     }
                 }
             }
 
-            // Contest Reminders
-            if (user.notificationSettings.contestNotify !== false) {
+            // --- Contest Reminders (IMPROVED LOGIC) ---
+            if (user.notificationSettings?.contestNotify === true) {
                  for (const contest of allContests) {
                     const startTime = new Date(contest.start_time);
                     const diffMinutes = (startTime.getTime() - now.getTime()) / (1000 * 60);
@@ -97,8 +96,8 @@ export default async (req, res) => {
                 }
             }
            
-            // Lab Period Reminders
-            if (user.schedule && user.notificationSettings.labNotify !== false) {
+            // --- Lab Period Reminders (IMPROVED LOGIC) ---
+            if (user.schedule && user.notificationSettings?.labNotify === true) {
                  const today = now.toLocaleString('en-US', { weekday: 'long', timeZone: 'Asia/Kolkata' }).toLowerCase();
                  const currentTime = now.getHours() * 60 + now.getMinutes();
                  for (const period of user.schedule) {

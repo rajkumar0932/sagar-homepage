@@ -2,9 +2,6 @@ import { sendEmail } from './lib/email.js';
 const admin = require('firebase-admin');
 
 // This new config block tells Vercel when to run this function.
-export const config = {
-  schedule: '*/15 * * * *',
-};
 
 // --- Firebase Admin SDK Initialization ---
 try {

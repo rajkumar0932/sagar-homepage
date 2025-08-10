@@ -1,6 +1,11 @@
 import { sendEmail } from './lib/email.js';
 const admin = require('firebase-admin');
 
+// This new config block tells Vercel when to run this function.
+export const config = {
+  schedule: '*/15 * * * *',
+};
+
 // --- Firebase Admin SDK Initialization ---
 try {
     if (!admin.apps.length) {
@@ -14,18 +19,12 @@ try {
 }
 const db = admin.firestore();
 
-// --- Contest Generation Logic (placeholder) ---
-const generateLeetCodeWeekly = (count = 4) => { return []; };
-const generateLeetCodeBiweekly = (count = 3) => { return []; };
-const generateCodeChefStarters = (count = 4) => { return []; };
-
 // --- Main Cron Job Handler ---
 export default async (req, res) => {
     try {
         const now = new Date();
         const usersSnapshot = await db.collection('userData').get();
-        const allContests = [...generateLeetCodeWeekly(), ...generateLeetCodeBiweekly(), ...generateCodeChefStarters()];
-
+        
         for (const userDoc of usersSnapshot.docs) {
             const user = userDoc.data();
             const userId = userDoc.id;
@@ -56,12 +55,9 @@ export default async (req, res) => {
                     await db.collection('userData').doc(userId).update({ assignments: updatedAssignments });
                 }
             }
-
-            // --- Contest & Lab Reminders (Logic remains the same) ---
-            // ... (rest of your contest and lab notification code)
-
+             // ... (The rest of your code for contests and labs remains the same)
         }
-        res.status(200).json({ message: 'Cron job completed successfully.' });
+        res.status(200).json({ message: 'Cron job ran successfully.' });
     } catch (error) {
         console.error('CRITICAL ERROR in cron job:', error);
         res.status(500).json({ error: 'Cron job failed', details: error.message });

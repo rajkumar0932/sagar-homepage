@@ -131,6 +131,6 @@ Open a Pull Request
 Distributed under the MIT License. See LICENSE for more information.
 
 📧 Contact
-Rajkumar -  kumarraj@0932.com
+Rajkumar -  kumarraj0932@gmail.com
 
 Project Link: https://github.com/rajkumar0932/sagar-homepage

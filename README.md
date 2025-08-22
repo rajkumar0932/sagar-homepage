@@ -1,74 +1,136 @@
-# Getting Started with Create React App
+Sagar's Personal Homepage & Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+<p align="center">
+<img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React">
+<img src="https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase">
+<img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
+<img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel">
+</p>
 
-## Available Scripts
+A comprehensive personal dashboard built with React and Firebase. This application serves as a central hub for managing daily tasks, tracking coding progress, staying updated on competitive programming contests, and interacting with a Gemini-powered AI chat.
 
-In the project directory, you can run:
+📋 Table of Contents
+✨ Features
 
-### `npm start`
+🛠️ Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+🚀 Getting Started
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Prerequisites
 
-### `npm test`
+Installation & Setup
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+⚙️ Environment Variables
 
-### `npm run build`
+📡 API Endpoints
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+🤝 Contributing
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+📄 License
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+📧 Contact
 
-### `npm run eject`
+✨ Features
+This project is packed with features to boost productivity and organization:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+🔐 Secure Authentication: Full user authentication (Login, Signup, Forgot Password) powered by Firebase Auth.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+🎨 Animated UI: A stunning, interactive animated background using Vanta.js and Three.js for a dynamic user experience.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+🤖 AI Chat Assistant: Integrated with Google's Gemini API for an intelligent and responsive chat experience.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+💻 Coding Stats Tracker: Fetches and displays real-time statistics from competitive programming platforms like Codeforces and LeetCode.
 
-## Learn More
+🗓️ Contest Calendar: Keeps you informed about upcoming contests from Codeforces, LeetCode, and CodeChef via the CList.by API.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+🔔 Email Notifications: Automated email notifications for reminders and feedback, powered by the Brevo API and serverless functions.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+💬 Feedback System: A built-in modal allows users to send feedback directly to the administrator.
 
-### Code Splitting
+** responsive Sidebar:** A sleek, collapsible sidebar for easy navigation and access to user profile information.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+🛠️ Tech Stack
+This project leverages a modern and powerful stack to deliver a seamless experience.
 
-### Analyzing the Bundle Size
+Frontend
+React: A JavaScript library for building user interfaces.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+React Router: For declarative routing in the application.
 
-### Making a Progressive Web App
+Framer Motion: For fluid animations and transitions.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Three.js & Vanta.js: For the 3D animated background.
 
-### Advanced Configuration
+Tailwind CSS: A utility-first CSS framework for rapid UI development.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Backend & Services
+Node.js: Used for the serverless functions.
 
-### Deployment
+Firebase:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Authentication: For user management.
 
-### `npm run build` fails to minify
+Firestore: As the NoSQL database.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-check deployment
-check 2.0
-check3.0
-check 5.0
+Storage: For file storage needs.
+
+Vercel: For hosting and deploying the serverless functions.
+
+Google Generative AI (Gemini): Powers the AI chat feature.
+
+Brevo (formerly Sendinblue): For sending transactional emails.
+
+CList.by API: To fetch competitive programming contest data.
+
+🚀 Getting Started
+To get a local copy up and running, follow these simple steps.
+
+Prerequisites
+Make sure you have the following installed on your machine:
+
+Node.js (v18.x or later)
+
+npm (Node Package Manager)
+
+Installation & Setup
+Clone the repository:
+
+git clone https://github.com/your-username/sagar-homepage.git
+cd sagar-homepage
+
+Install dependencies:
+
+npm install
+
+Set up environment variables:
+Create a .env file in the root of the project and add the necessary configuration keys. See the Environment Variables section for details.
+
+Run the development server:
+
+npm start
+
+The application will be available at http://localhost:3000.
+
+
+🤝 Contributing
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
+
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+
+Fork the Project
+
+Create your Feature Branch (git checkout -b feature/AmazingFeature)
+
+Commit your Changes (git commit -m 'Add some AmazingFeature')
+
+Push to the Branch (git push origin feature/AmazingFeature)
+
+Open a Pull Request
+
+📄 License
+Distributed under the MIT License. See LICENSE for more information.
+
+📧 Contact
+Rajkumar -  kumarraj@0932.com
+
+Project Link: https://github.com/rajkumar0932/sagar-homepage
